@@ -13,6 +13,8 @@ import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.*
 import com.fri.matevzfa.approxhpvmdemo.R
+import java.util.*
+import kotlin.concurrent.fixedRateTimer
 
 
 class HARService : Service(), LifecycleOwner {
@@ -21,6 +23,7 @@ class HARService : Service(), LifecycleOwner {
 
     private lateinit var mApproxHVPMWrapper: ApproxHVPMWrapper
     private lateinit var mSensorSampler: SensorSampler
+    private lateinit var mTimer: Timer
 
     private val TAG = "HARService"
 
@@ -35,11 +38,11 @@ class HARService : Service(), LifecycleOwner {
         mApproxHVPMWrapper = ApproxHVPMWrapper()
         lifecycle.addObserver(mApproxHVPMWrapper)
 
-        // Start sampling
+        // Init sampler
         mSensorSampler = SensorSampler(this)
-        lifecycle.addObserver(mSensorSampler)
 
         startForeground()
+        startLoop()
 
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
     }
@@ -53,6 +56,8 @@ class HARService : Service(), LifecycleOwner {
     override fun onDestroy() {
         super.onDestroy()
         Log.i(TAG, "onDestroy")
+
+        mTimer.cancel()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
     }
@@ -81,10 +86,17 @@ class HARService : Service(), LifecycleOwner {
 
         startForeground(ONGOING_NOTIFICATION_ID, notification)
     }
+
+    private fun startLoop() {
+        mTimer = fixedRateTimer("sampling", true, period = 5000) {
+            Log.i(TAG, "Would start sampling at this point")
+            mSensorSampler.start()
+        }
+    }
 }
 
 
-internal class SensorSampler(context: Context) : SensorEventListener, LifecycleObserver {
+internal class SensorSampler(context: Context) : SensorEventListener {
 
     val TAG = "SensorSampler"
 
@@ -93,6 +105,13 @@ internal class SensorSampler(context: Context) : SensorEventListener, LifecycleO
     private var mAccelerometer: Sensor
     private var mGyro: Sensor
 
+    private val NUM_READS = 32
+
+    private var accelerometerIdx = 0
+    private var accelerometerData = FloatArray(NUM_READS * 3)
+    private var gyroIdx = 0
+    private var gyroData = FloatArray(NUM_READS * 3)
+
     init {
         mSensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
@@ -100,19 +119,13 @@ internal class SensorSampler(context: Context) : SensorEventListener, LifecycleO
         mGyro = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-    private fun start() {
+    fun start() {
         fun register(sensor: Sensor) {
-            mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_NORMAL)
+            mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST)
         }
 
         register(mAccelerometer)
         register(mGyro)
-    }
-
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    private fun stop() {
-        mSensorManager.unregisterListener(this)
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
@@ -121,23 +134,43 @@ internal class SensorSampler(context: Context) : SensorEventListener, LifecycleO
 
         when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> {
-                Log.v(
-                    TAG,
-                    "accel x=${event.values[0]} y=${event.values[1]} z=${event.values[2]}"
-                );
+                if (accelerometerIdx < accelerometerData.size) {
+                    accelerometerData[accelerometerIdx++] = event.values[0]
+                    accelerometerData[accelerometerIdx++] = event.values[1]
+                    accelerometerData[accelerometerIdx++] = event.values[2]
+                } else {
+                    mSensorManager.unregisterListener(this, mAccelerometer)
+                }
             }
             Sensor.TYPE_GYROSCOPE -> {
-                Log.v(
-                    TAG,
-                    "gyro x=${event.values[0]} y=${event.values[1]} z=${event.values[2]}"
-                );
+                if (gyroIdx < gyroData.size) {
+                    gyroData[gyroIdx++] = event.values[0]
+                    gyroData[gyroIdx++] = event.values[1]
+                    gyroData[gyroIdx++] = event.values[2]
+                } else {
+                    mSensorManager.unregisterListener(this, mGyro)
+                }
             }
+        }
+
+        if (accelerometerIdx >= accelerometerData.size && gyroIdx >= gyroData.size) {
+
+            accelerometerIdx = 0;
+            gyroIdx = 0;
+
+            Log.d(TAG, "accelerometer ${dataToString(accelerometerData)}, ...")
+            Log.d(TAG, "gyro ${dataToString(gyroData)}, ...")
+
+            Log.i(TAG, "TODO: start a worker that will send data to HPVM")
         }
     }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         sensor.also {
-            Log.i(TAG, "Accuracy changed for ${sensor?.name}: $accuracy")
+            Log.d(TAG, "Accuracy changed for ${sensor?.name}: $accuracy")
         }
     }
 }
+
+private fun dataToString(values: FloatArray): String =
+    values.take(9).map { "%.2f".format(it) }.joinToString(", ")

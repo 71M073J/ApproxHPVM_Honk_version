@@ -37,13 +37,4 @@ class ApproxHVPMWrapper : LifecycleObserver {
      */
     @Suppress("KotlinJniMissingFunction")
     private external fun hpvmCleanup();
-
-    /**
-     * Passes data for inference to the ApproxHPVM runtime.
-     * This method must be implemented by the ApproxHPVM compiler, not by the app programmer.
-     *
-     * @return SoftMax layer output
-     */
-    @Suppress("KotlinJniMissingFunction")
-    external fun hpvmInference(input: FloatArray): FloatArray;
 }
