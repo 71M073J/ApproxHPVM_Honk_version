@@ -29,8 +29,12 @@ class HARService : Service(), LifecycleOwner {
     private lateinit var lifecycleRegistry: LifecycleRegistry
 
     private lateinit var mApproxHVPMWrapper: ApproxHVPMWrapper
+
+    private lateinit var mHandlerThreadSensors: HandlerThread
     private lateinit var mSensorSampler: SensorSampler
-    private lateinit var mHandlerThread: HandlerThread
+
+    private lateinit var mHandlerThreadClassify: HandlerThread
+    private lateinit var mClassifier: HARClassifier
 
     private val TAG = "HARService"
 
@@ -48,10 +52,20 @@ class HARService : Service(), LifecycleOwner {
         lifecycle.addObserver(mApproxHVPMWrapper)
 
         // Init sampler
-        mHandlerThread = HandlerThread("HARService.HandlerThread").apply {
+        mHandlerThreadSensors = HandlerThread("HARService.mHandlerThreadSensors").apply {
             start()
         }
-        mSensorSampler = SensorSampler(this, mHandlerThread)
+        mSensorSampler = SensorSampler(this, mHandlerThreadSensors) { signalImage ->
+            mClassifier.classify(signalImage)
+        }
+
+        // Init classification thread
+        mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
+            start()
+        }
+        mClassifier = HARClassifier(this, mHandlerThreadClassify) { softMax ->
+            Log.d(TAG, "Received SoftMax ${softMax.joinToString(", ")}")
+        }
 
 
         startForeground()
@@ -77,14 +91,13 @@ class HARService : Service(), LifecycleOwner {
         stopSensing()
 
         // Gracefully stop the HandlerThread after all enqueued work is completed
-        mHandlerThread.quitSafely()
-
-        stopForeground(true)
+        mHandlerThreadSensors.quitSafely()
+        mHandlerThreadClassify.quitSafely()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
     }
 
-    /* LifeCycleOwner */
+    /* LifecycleOwner */
 
     override fun getLifecycle(): Lifecycle {
         return lifecycleRegistry
@@ -122,7 +135,7 @@ class HARService : Service(), LifecycleOwner {
     }
 
     /**
-     * Stops sensor data acquisition. Task already queued in [mHandlerThread] might continue
+     * Stops sensor data acquisition. Task already queued in [mHandlerThreadSensors] might continue
      * executing until they are completed.
      */
     private fun stopSensing() {
@@ -131,6 +144,28 @@ class HARService : Service(), LifecycleOwner {
 
         Log.d(TAG, "Stopped sensing")
     }
+}
+
+internal class HARClassifier(
+    val context: Context, handlerThread: HandlerThread,
+    private val callback: (FloatArray) -> Unit = {}
+) {
+    val handler = Handler(handlerThread.looper)
+
+    val numClasses = 6
+
+    /**
+     * Classify signal image given by [signalImage] and return SoftMax
+     */
+    fun classify(signalImage: FloatArray) {
+        handler.post {
+            // callback(hpvmClassify(signalImage))
+            callback(FloatArray(numClasses))
+        }
+    }
+
+    @Suppress("KotlinJniMissingFunction")
+    private external fun hpvmClassify(values: FloatArray): FloatArray
 }
 
 /**
@@ -168,7 +203,11 @@ internal class DataContainer(val numReads: Int, val numAxes: Int) {
 }
 
 
-internal class SensorSampler(context: Context, handlerThread: HandlerThread) :
+internal class SensorSampler(
+    context: Context,
+    handlerThread: HandlerThread,
+    private val callback: (FloatArray) -> Unit = {}
+) :
     SensorEventListener {
 
     private val TAG = "SensorSampler"
@@ -233,6 +272,9 @@ internal class SensorSampler(context: Context, handlerThread: HandlerThread) :
      */
     fun startAll() {
         if (!shouldStop) {
+            accelContainer.reset()
+            gyroContainer.reset()
+
             register(mAccelerometer)
             register(mGyro)
         }
@@ -326,6 +368,8 @@ internal class SensorSampler(context: Context, handlerThread: HandlerThread) :
         fillSignalImageChannel(signalImage, 0, bodyAccelData)
         fillSignalImageChannel(signalImage, 1, gyroData)
         fillSignalImageChannel(signalImage, 2, totalAccelData)
+
+        callback(signalImage)
     }
 
     private fun filterWith(data: FloatArray, axis: Int, filter: Cascade) {
