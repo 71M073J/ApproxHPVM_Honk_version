@@ -1,4 +1,4 @@
-package com.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo
 
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4

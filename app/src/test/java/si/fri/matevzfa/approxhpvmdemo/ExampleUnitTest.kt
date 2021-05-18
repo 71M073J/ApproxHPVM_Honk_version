@@ -1,4 +1,4 @@
-package com.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo
 
 import org.junit.Test
 

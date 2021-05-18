@@ -12,7 +12,6 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
-import com.fri.matevzfa.approxhpvmdemo.R
 
 
 class HARService : Service(), LifecycleOwner {

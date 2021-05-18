@@ -8,7 +8,6 @@ import android.hardware.SensorManager
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
-import com.fri.matevzfa.approxhpvmdemo.BuildConfig
 import uk.me.berndporr.iirj.Butterworth
 import uk.me.berndporr.iirj.Cascade
 

@@ -9,7 +9,6 @@ import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import com.fri.matevzfa.approxhpvmdemo.R
 
 
 class MainActivity : AppCompatActivity() {
