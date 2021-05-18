@@ -66,6 +66,10 @@ class HARService : Service(), LifecycleOwner {
         }
         mClassifier = HARClassifier(this, mHandlerThreadClassify) { softMax ->
             Log.d(TAG, "Received SoftMax ${softMax.joinToString(", ")}")
+
+            // TODO:
+            //  - use this data to guide approximations
+            //  - emit predicted class to some activity via a Broadcast
         }
 
 
@@ -330,8 +334,6 @@ internal class SensorSampler(
     /**
      * Applies required pre-processing of sensor data and starts a worker for HAR classification.
      * Resets DataContainers after copying the data
-     *
-     * TODO: Actually start classifcation
      */
     private fun finalize() {
         if (BuildConfig.DEBUG && !accelContainer.isFull()) {
@@ -359,6 +361,9 @@ internal class SensorSampler(
         filterWith(totalAccelData, 2, filterAccel20HzZ)
 
         // Prepare body_acc
+        // At first, we filter the data so that bodyAccelData actually contains
+        // gravity acceleration, but we later subtract it from totalAccelData to obtain
+        // actual bodyAccelData.
         val bodyAccelData = totalAccelData.copyOf()
         filterWith(bodyAccelData, 0, filterAccel03HzX)
         filterWith(bodyAccelData, 1, filterAccel03HzY)
