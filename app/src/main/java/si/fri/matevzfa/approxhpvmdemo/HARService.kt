@@ -1,5 +1,6 @@
 package si.fri.matevzfa.approxhpvmdemo
 
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
@@ -143,6 +144,20 @@ class HARService : Service(), LifecycleOwner {
         mSensorSampler.shouldStop = true
 
         Log.d(TAG, "Stopped sensing")
+    }
+
+    companion object {
+
+        fun isRunning(context: Context): Boolean {
+            val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+            @Suppress("DEPRECATION")
+            for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+                if (HARService::javaClass.name == service.service.className) {
+                    return true
+                }
+            }
+            return false
+        }
     }
 }
 
