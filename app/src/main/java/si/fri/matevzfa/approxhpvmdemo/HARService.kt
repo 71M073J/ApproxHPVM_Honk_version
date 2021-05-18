@@ -36,6 +36,8 @@ class HARService : Service(), LifecycleOwner {
 
     val ONGOING_NOTIFICATION_ID = 1112123
 
+    /* Service */
+
     override fun onCreate() {
         super.onCreate()
 
@@ -58,23 +60,14 @@ class HARService : Service(), LifecycleOwner {
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
     }
 
-    private fun startSensing() {
-        mSensorSampler.startAll()
-
-        Log.d(TAG, "Started sensing")
-    }
-
-    private fun stopSensing() {
-        mSensorSampler.shouldStop = true
-        mHandlerThread.quitSafely()
-
-        Log.d(TAG, "Stopped sensing")
-    }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.i(TAG, "onStartCommand")
 
         return START_REDELIVER_INTENT
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        return null
     }
 
     override fun onDestroy() {
@@ -83,17 +76,25 @@ class HARService : Service(), LifecycleOwner {
 
         stopSensing()
 
+        // Gracefully stop the HandlerThread after all enqueued work is completed
+        mHandlerThread.quitSafely()
+
+        stopForeground(true)
+
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
     }
+
+    /* LifeCycleOwner */
 
     override fun getLifecycle(): Lifecycle {
         return lifecycleRegistry
     }
 
-    override fun onBind(intent: Intent?): IBinder? {
-        return null
-    }
+    /* Helpers */
 
+    /**
+     * Starts the service as a foreground service with a permanent notification.
+     */
     private fun startForeground() {
         val pendingIntent: PendingIntent =
             Intent(this, MainActivity::class.java).let { notificationIntent ->
@@ -110,8 +111,33 @@ class HARService : Service(), LifecycleOwner {
 
         startForeground(ONGOING_NOTIFICATION_ID, notification)
     }
+
+    /**
+     * Starts the sampling service.
+     */
+    private fun startSensing() {
+        mSensorSampler.startAll()
+
+        Log.d(TAG, "Started sensing")
+    }
+
+    /**
+     * Stops sensor data acquisition. Task already queued in [mHandlerThread] might continue
+     * executing until they are completed.
+     */
+    private fun stopSensing() {
+        // Notify mSensorSampler to stop re-registering sensors
+        mSensorSampler.shouldStop = true
+
+        Log.d(TAG, "Stopped sensing")
+    }
 }
 
+/**
+ * [DataContainer] serves for intermediate storage for sensor data.
+ * It is used to read [numReads]  sensor readings with [numAxes] channels (e.g. x, y, z values of
+ * gyroscope data).
+ */
 internal class DataContainer(val numReads: Int, val numAxes: Int) {
 
     private var idx: Int = 0
@@ -135,6 +161,9 @@ internal class DataContainer(val numReads: Int, val numAxes: Int) {
         idx = 0
     }
 
+    /**
+     * Accessor method for [data] field of this data structure. Data is **NOT** copied.
+     */
     fun dataRef(): FloatArray = data
 }
 
@@ -148,15 +177,19 @@ internal class SensorSampler(context: Context, handlerThread: HandlerThread) :
 
     private val mHandler: Handler
 
+    /* Sensors */
     private var mAccelerometer: Sensor
     private var mGyro: Sensor
 
-    private val NUM_READS = 128
+    /* Sampling parameters */
+    private val numReads = 128
     private val rate50Hz = 20_000
 
-    private val accelContainer = DataContainer(NUM_READS, 3)
-    private val gyroContainer = DataContainer(NUM_READS, 3)
+    /* Intermediate sensor data containers */
+    private val accelContainer = DataContainer(numReads, 3)
+    private val gyroContainer = DataContainer(numReads, 3)
 
+    /* Butterworth filters for filtering sensor signals */
     private val filterAccel20HzX = lowPass20Hz(rate50Hz)
     private val filterAccel20HzY = lowPass20Hz(rate50Hz)
     private val filterAccel20HzZ = lowPass20Hz(rate50Hz)
@@ -184,14 +217,14 @@ internal class SensorSampler(context: Context, handlerThread: HandlerThread) :
     /**
      *  Registers [sensor] to [mSensorManager].
      */
-    fun register(sensor: Sensor) {
+    private fun register(sensor: Sensor) {
         mSensorManager.registerListener(this, sensor, rate50Hz, mHandler)
     }
 
     /**
      * Unregisters [sensor] from [mSensorManager]
      */
-    fun unregister(sensor: Sensor) {
+    private fun unregister(sensor: Sensor) {
         mSensorManager.unregisterListener(this, sensor)
     }
 

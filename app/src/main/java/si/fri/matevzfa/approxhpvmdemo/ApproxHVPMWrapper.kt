@@ -32,7 +32,7 @@ class ApproxHVPMWrapper : LifecycleObserver {
     private external fun hpvmInit();
 
     /**
-     * Cleans up the HPVM runtime.
+     * Cleans up the HPVM runtime initialized with [hpvmInit].
      * This method must be implemented by the ApproxHPVM compiler, not by the app programmer.
      */
     @Suppress("KotlinJniMissingFunction")
