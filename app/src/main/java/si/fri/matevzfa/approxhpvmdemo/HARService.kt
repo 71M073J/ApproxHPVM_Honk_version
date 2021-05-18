@@ -13,6 +13,10 @@ import android.os.IBinder
 import android.util.Log
 import androidx.lifecycle.*
 import com.fri.matevzfa.approxhpvmdemo.R
+import uk.me.berndporr.iirj.Butterworth
+import uk.me.berndporr.iirj.Cascade
+import java.lang.Integer.max
+import java.lang.Integer.min
 import java.util.*
 import kotlin.concurrent.fixedRateTimer
 
@@ -95,6 +99,29 @@ class HARService : Service(), LifecycleOwner {
     }
 }
 
+internal class DataContainer(val numReads: Int, val numAxes: Int) {
+
+    private var idx: Int = 0
+    private var data = FloatArray(numReads * numAxes)
+
+    /**
+     * @throws IndexOutOfBoundsException if [v] does not have at least [numAxes] elements.
+     */
+    fun push(v: FloatArray, filter: Cascade? = null) {
+        for (i in 0 until numAxes) {
+            data[idx++] = filter?.filter(v[i].toDouble())?.toFloat() ?: v[i]
+        }
+    }
+
+    fun isFull(): Boolean = idx >= data.size
+
+    fun reset() {
+        idx = 0
+    }
+
+    fun dataRef(): FloatArray = data
+}
+
 
 internal class SensorSampler(context: Context) : SensorEventListener {
 
@@ -105,12 +132,24 @@ internal class SensorSampler(context: Context) : SensorEventListener {
     private var mAccelerometer: Sensor
     private var mGyro: Sensor
 
-    private val NUM_READS = 32
+    private val NUM_READS = 128
+    private val rate50Hz = 20_000
 
-    private var accelerometerIdx = 0
-    private var accelerometerData = FloatArray(NUM_READS * 3)
-    private var gyroIdx = 0
-    private var gyroData = FloatArray(NUM_READS * 3)
+    private val accelContainer = DataContainer(NUM_READS, 3)
+    private val gyroContainer = DataContainer(NUM_READS, 3)
+
+    private val filterAccel20HzX = lowPass20Hz(rate50Hz)
+    private val filterAccel20HzY = lowPass20Hz(rate50Hz)
+    private val filterAccel20HzZ = lowPass20Hz(rate50Hz)
+
+    private val filterGyro20HzX = lowPass20Hz(rate50Hz)
+    private val filterGyro20HzY = lowPass20Hz(rate50Hz)
+    private val filterGyro20HzZ = lowPass20Hz(rate50Hz)
+
+    private val filterAccel03HzX = lowPass03Hz(rate50Hz)
+    private val filterAccel03HzY = lowPass03Hz(rate50Hz)
+    private val filterAccel03HzZ = lowPass03Hz(rate50Hz)
+
 
     init {
         mSensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -121,7 +160,7 @@ internal class SensorSampler(context: Context) : SensorEventListener {
 
     fun start() {
         fun register(sensor: Sensor) {
-            mSensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST)
+            mSensorManager.registerListener(this, sensor, rate50Hz)
         }
 
         register(mAccelerometer)
@@ -134,34 +173,92 @@ internal class SensorSampler(context: Context) : SensorEventListener {
 
         when (event.sensor.type) {
             Sensor.TYPE_ACCELEROMETER -> {
-                if (accelerometerIdx < accelerometerData.size) {
-                    accelerometerData[accelerometerIdx++] = event.values[0]
-                    accelerometerData[accelerometerIdx++] = event.values[1]
-                    accelerometerData[accelerometerIdx++] = event.values[2]
+                if (!accelContainer.isFull()) {
+                    accelContainer.push(event.values)
                 } else {
                     mSensorManager.unregisterListener(this, mAccelerometer)
                 }
             }
             Sensor.TYPE_GYROSCOPE -> {
-                if (gyroIdx < gyroData.size) {
-                    gyroData[gyroIdx++] = event.values[0]
-                    gyroData[gyroIdx++] = event.values[1]
-                    gyroData[gyroIdx++] = event.values[2]
+                if (!gyroContainer.isFull()) {
+                    gyroContainer.push(event.values)
                 } else {
                     mSensorManager.unregisterListener(this, mGyro)
                 }
             }
         }
 
-        if (accelerometerIdx >= accelerometerData.size && gyroIdx >= gyroData.size) {
+        if (accelContainer.isFull() && gyroContainer.isFull()) {
+            val totalAccelData = copyAndMedianFilter(accelContainer.dataRef(), 2)
+            val gyroData = copyAndMedianFilter(gyroContainer.dataRef(), 2)
 
-            accelerometerIdx = 0;
-            gyroIdx = 0;
+            // Convert to 'g's, because android uses m/s²
+            for (i in totalAccelData.indices) {
+                totalAccelData[i] /= 9.807f
+            }
 
-            Log.d(TAG, "accelerometer ${dataToString(accelerometerData)}, ...")
-            Log.d(TAG, "gyro ${dataToString(gyroData)}, ...")
+            // Data has been copied, reset the containers
+            accelContainer.reset()
+            gyroContainer.reset()
 
-            Log.i(TAG, "TODO: start a worker that will send data to HPVM")
+            // Prepare total_acc
+            filterWith(totalAccelData, 0, filterAccel20HzX)
+            filterWith(totalAccelData, 1, filterAccel20HzY)
+            filterWith(totalAccelData, 2, filterAccel20HzZ)
+
+            // Prepare body_acc
+            val bodyAccelData = totalAccelData.copyOf()
+            filterWith(bodyAccelData, 0, filterAccel03HzX)
+            filterWith(bodyAccelData, 1, filterAccel03HzY)
+            filterWith(bodyAccelData, 2, filterAccel03HzZ)
+            for (i in 0 until bodyAccelData.size) {
+                bodyAccelData[i] = totalAccelData[i] - bodyAccelData[i]
+            }
+
+            // Prepare gyro_acc
+            filterWith(gyroData, 0, filterGyro20HzX)
+            filterWith(gyroData, 1, filterGyro20HzY)
+            filterWith(gyroData, 2, filterGyro20HzZ)
+
+            Log.d(TAG, "signal image info - ")
+            Log.d(TAG, "signal image info - ${printInfo("bodyAccelData", bodyAccelData)}")
+            Log.d(TAG, "signal image info - ${printInfo("gyroData", gyroData)}")
+            Log.d(TAG, "signal image info - ${printInfo("totalAccelData", totalAccelData)}")
+            Log.d(TAG, "signal image info - ")
+
+            // Prepare signal image
+            val signalImage = FloatArray(3 * 32 * 32)
+            fillSignalImageChannel(signalImage, 0, bodyAccelData)
+            fillSignalImageChannel(signalImage, 1, gyroData)
+            fillSignalImageChannel(signalImage, 2, totalAccelData)
+        }
+    }
+
+    fun filterWith(data: FloatArray, axis: Int, filter: Cascade) {
+        for (i in axis until data.size step 3) {
+            data[i] = filter.filter(data[i].toDouble()).toFloat()
+        }
+    }
+
+
+    fun fillSignalImageChannel(
+        out: FloatArray,
+        channel: Int,
+        channelData: FloatArray
+    ) {
+        fun FloatArray.getAxis(i: Int, axis: Int) = this[3 * i + axis]
+
+        val chanOffset = channel * 32 * 32
+
+        //                    x, y, z, y, x, z, x, y
+        val outAxes = arrayOf(0, 1, 2, 1, 0, 2, 0, 1)
+
+        for (row in 0 until 32) {
+            for (col in 0 until 32) {
+                val fold = row / 8
+                val ax = outAxes[row % 8]
+                out[chanOffset + row * 32 + col] = channelData.getAxis(fold * 32 + col, ax)
+            }
         }
     }
 
@@ -172,5 +269,35 @@ internal class SensorSampler(context: Context) : SensorEventListener {
     }
 }
 
+private fun printInfo(name: String, data: FloatArray): String {
+    val min = data.minOrNull()
+    val max = data.maxOrNull()
+    val avg = data.sum() / data.size
+    return "$name: dmin=$min dmax=$max davg=$avg"
+}
+
 private fun dataToString(values: FloatArray): String =
     values.take(9).map { "%.2f".format(it) }.joinToString(", ")
+
+private fun copyAndMedianFilter(values: FloatArray, winSize: Int): FloatArray {
+    val window = FloatArray(2 * winSize + 1)
+    val out = FloatArray(values.size)
+    for (i in values.indices) {
+        for (ir in 0 until (2 * winSize + 1)) {
+            val clippedIdx = min(values.size - 1, max(0, i - winSize + ir))
+            window[ir] = values[clippedIdx]
+        }
+        window.sort()
+        out[i] = window[winSize]
+    }
+
+    return out
+}
+
+private fun lowPass20Hz(sampRateUs: Int) = Butterworth().apply {
+    lowPass(3, 1_000_000.0 / sampRateUs, 20.0)
+}
+
+private fun lowPass03Hz(sampRateUs: Int) = Butterworth().apply {
+    lowPass(3, 1_000_000.0 / sampRateUs, 0.3)
+}
