@@ -405,7 +405,7 @@ internal class SensorSampler(
 
         val chanOffset = channel * 32 * 32
 
-        //                    x, y, z, y, x, z, x, y
+        // .................. x, y, z, y, x, z, x, y
         val outAxes = arrayOf(0, 1, 2, 1, 0, 2, 0, 1)
 
         for (row in 0 until 32) {
@@ -438,17 +438,26 @@ private fun dataToString(values: FloatArray): String =
  * Applies median filtering to [values], with specified |winSize]. [winSize] is interpreted as the
  * offset in each direction. Actual window size is computed by `2*winSize+1`.
  * For Out-of-bounds values, the nearest valid value is used.
+ *
+ * The [values] array is an array composed of values of all three axes:
+ * `[x, y, z, x, y, z, ... x, y, z]`. The implementation filters each axis separately
  */
 private fun copyAndMedianFilter(values: FloatArray, winSize: Int): FloatArray {
     val window = FloatArray(2 * winSize + 1)
     val out = FloatArray(values.size)
-    for (i in values.indices) {
-        for (ir in 0 until (2 * winSize + 1)) {
-            val clippedIdx = min(values.size - 1, max(0, i - winSize + ir))
-            window[ir] = values[clippedIdx]
+
+    for (axis in 0..2) {
+        val axisMinIdx = axis
+        val axisMaxIdx = values.size - 3 + axis
+        for (i in axis until values.size step 3) {
+            for (ir in 0 until (2 * winSize + 1)) {
+                val idx = i - (winSize + ir) * 3
+                val clippedIdx = min(axisMaxIdx, max(axisMinIdx, idx))
+                window[ir] = values[clippedIdx]
+            }
+            window.sort()
+            out[i] = window[winSize]
         }
-        window.sort()
-        out[i] = window[winSize]
     }
 
     return out
