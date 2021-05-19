@@ -7,9 +7,11 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.strictmode.DiskReadViolation
 import android.util.Log
 import uk.me.berndporr.iirj.Butterworth
 import uk.me.berndporr.iirj.Cascade
+import uk.me.berndporr.iirj.DirectFormAbstract
 
 class HARSensorSampler(
     context: Context,
@@ -132,8 +134,8 @@ class HARSensorSampler(
             error("Assertion failed")
         }
 
-        val totalAccelData = copyAndMedianFilter(accelContainer.dataRef(), 2)
-        val gyroData = copyAndMedianFilter(gyroContainer.dataRef(), 2)
+        val totalAccelData = copyAndMedianFilter(accelContainer.dataRef(), 1)
+        val gyroData = copyAndMedianFilter(gyroContainer.dataRef(), 1)
 
         // Data has been copied, reset the containers
         accelContainer.reset()
@@ -282,9 +284,9 @@ private fun fillSignalImageChannel(
     val outAxes = arrayOf(0, 1, 2, 1, 0, 2, 0, 1)
 
     for (row in 0 until 32) {
+        val ax = outAxes[row % 8]
+        val fold = row / 8
         for (col in 0 until 32) {
-            val fold = row / 8
-            val ax = outAxes[row % 8]
             out[chanOffset + row * 32 + col] = channelData.getAxis(fold * 32 + col, ax)
         }
     }

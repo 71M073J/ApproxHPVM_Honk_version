@@ -2,17 +2,22 @@ package si.fri.matevzfa.approxhpvmdemo
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var mBroadcastReceiver: BroadcastReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,6 +62,52 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        //
+        // Register BroadcastReceiver
+
+        mBroadcastReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                Log.i(TAG, "broadcast received")
+
+                intent ?: return
+
+                Log.i(TAG, "broadcast received with intent")
+
+
+                when (intent.action) {
+                    BROADCAST_SOFTMAX -> {
+                        val argMax = intent.getIntExtra("argMax", -1)
+                        updateClass(argMax)
+                    }
+                }
+            }
+        }
+
+        LocalBroadcastManager.getInstance(this)
+            .registerReceiver(mBroadcastReceiver, IntentFilter(BROADCAST_SOFTMAX))
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver)
+    }
+
+
+    private fun updateClass(argMax: Int) {
+        Log.i(TAG, "updateClass $argMax")
+        val text = when (argMax) {
+            0 -> "Walking"
+            1 -> "Upstairs"
+            2 -> "Downstairs"
+            3 -> "Sitting"
+            4 -> "Standing"
+            5 -> "Lying"
+            else -> ""
+        }
+
+        findViewById<TextView>(R.id.argMax).text = text
     }
 
     /**
@@ -66,13 +117,15 @@ class MainActivity : AppCompatActivity() {
     external fun stringFromJNI(): String
 
     companion object {
+
         // Used to load the 'native-lib' library on application startup.
         init {
             System.loadLibrary("native-lib")
         }
 
         const val TAG = "MainActivity"
-
         const val CHANNEL_ID = "Channel"
+
+        const val BROADCAST_SOFTMAX = "Broadcast.softMax"
     }
 }

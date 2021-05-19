@@ -12,13 +12,15 @@ import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 
 
 class HARService : Service(), LifecycleOwner {
 
+
     private lateinit var lifecycleRegistry: LifecycleRegistry
 
-    private lateinit var mApproxHVPMWrapper: ApproxHVPMWrapper
+    private lateinit var mApproxHVPMWrapper: ApproxHPVMWrapper
 
     private lateinit var mHandlerThreadSensors: HandlerThread
     private lateinit var mSensorSampler: HARSensorSampler
@@ -38,7 +40,7 @@ class HARService : Service(), LifecycleOwner {
         lifecycleRegistry = LifecycleRegistry(this)
 
         // Init HPVM
-        mApproxHVPMWrapper = ApproxHVPMWrapper()
+        mApproxHVPMWrapper = ApproxHPVMWrapper(this)
         lifecycle.addObserver(mApproxHVPMWrapper)
 
         // Init sampler
@@ -53,12 +55,18 @@ class HARService : Service(), LifecycleOwner {
         mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
             start()
         }
-        mClassifier = HARClassifier(this, mHandlerThreadClassify) { softMax ->
+        mClassifier = HARClassifier(mApproxHVPMWrapper, mHandlerThreadClassify) { softMax ->
             Log.d(TAG, "Received SoftMax ${softMax.joinToString(", ")}")
+
+            val argMax: Int = softMax.indices.maxByOrNull { softMax[it] } ?: -1
+            Intent().also { intent ->
+                intent.setAction(MainActivity.BROADCAST_SOFTMAX);
+                intent.putExtra("argMax", argMax)
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+            }
 
             // TODO:
             //  - use this data to guide approximations
-            //  - emit predicted class to some activity via a Broadcast
         }
 
 
