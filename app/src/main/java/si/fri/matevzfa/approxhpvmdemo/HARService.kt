@@ -153,7 +153,11 @@ class HARService : Service(), LifecycleOwner {
             val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
             @Suppress("DEPRECATION")
             for (service in manager.getRunningServices(Int.MAX_VALUE)) {
-                if (HARService::javaClass.name == service.service.className) {
+                Log.i(
+                    "HarService",
+                    "${HARService::class.java.name} == ${service.service.className}"
+                )
+                if (HARService::class.java.name == service.service.className) {
                     return true
                 }
             }
