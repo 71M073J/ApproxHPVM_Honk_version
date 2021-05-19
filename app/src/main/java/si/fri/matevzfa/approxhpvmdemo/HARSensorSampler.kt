@@ -206,9 +206,14 @@ private class DataContainer(val numReads: Int, val numAxes: Int) {
      * @throws IndexOutOfBoundsException if [v] does not have at least [numAxes] elements, or if
      * more than [numReads] values are added
      */
-    fun push(v: FloatArray, filter: Cascade? = null) {
+    fun push(v: FloatArray) {
+        val mapping = mapOf(
+            0 to 1,
+            1 to 2,
+            2 to 0
+        )
         for (i in 0 until numAxes) {
-            data[idx++] = filter?.filter(v[i].toDouble())?.toFloat() ?: v[i]
+            data[idx++] = v[mapping.getOrDefault(i, i)]
         }
     }
 
