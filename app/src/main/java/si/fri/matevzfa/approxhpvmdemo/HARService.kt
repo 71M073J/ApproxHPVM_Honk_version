@@ -28,6 +28,8 @@ class HARService : Service(), LifecycleOwner {
     private lateinit var mHandlerThreadClassify: HandlerThread
     private lateinit var mClassifier: HARClassifier
 
+    private lateinit var mAdaptationEngine: AdaptationEngine
+
     private val TAG = "HARService"
 
     val ONGOING_NOTIFICATION_ID = 1112123
@@ -51,6 +53,8 @@ class HARService : Service(), LifecycleOwner {
             mClassifier.classify(signalImage)
         }
 
+        mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper, 6, 4)
+
         // Init classification thread
         mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
             start()
@@ -68,8 +72,7 @@ class HARService : Service(), LifecycleOwner {
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }
 
-            // TODO:
-            //  - use this data to guide approximations
+            mAdaptationEngine.actUpon(softMax, argMax)
         }
 
 
