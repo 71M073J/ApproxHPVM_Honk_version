@@ -1,15 +1,14 @@
 package si.fri.matevzfa.approxhpvmdemo
 
 import android.util.Log
+import kotlin.math.max
+import kotlin.math.min
 
 
-class StateAdaptation(
-    approxHPVMWrapper: ApproxHPVMWrapper,
-    val nTracked: Int,
-    val wrongIfBelow: Int
-) :
-
+class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
     AdaptationEngine(approxHPVMWrapper) {
+
+    val nTracked: Int = 3
 
     private enum class ApproximationChange {
         MORE, LESS, LESS_2, NONE
@@ -25,29 +24,20 @@ class StateAdaptation(
         Log.i(TAG, "BEGIN")
         Log.i(TAG, "approximationVotes $approximationVotes")
 
-
         addState(argMax)
 
         if (lastNStates.size < nTracked) {
             return
         }
 
-        val counts = lastNStates.groupingBy { it }.eachCount()
-        val majorityClass = counts.maxByOrNull { it.value }!!.key
-        val unreliable =
-            counts[majorityClass]!! <= wrongIfBelow || majorityClass != lastMajorityClass
+        val reliable = lastNStates.all { it == lastNStates.last() }
 
-        lastMajorityClass = majorityClass
-
-        Log.i(TAG, "counts $counts")
-        Log.i(TAG, "majorityClass $majorityClass")
-        Log.i(TAG, "unreliable $unreliable")
         Log.i(TAG, "lastTwoEq ${areLastTwoEqual()}")
 
-        approximationVotes = if (unreliable) {
-            approximationVotes - 1
+        approximationVotes = if (reliable) {
+            max(0, approximationVotes) + 1
         } else {
-            approximationVotes + 1
+            min(0, approximationVotes) - 1
         }.coerceIn(-2, 2)
 
 
@@ -59,10 +49,6 @@ class StateAdaptation(
             mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(currentIdx / 2)
             approximationVotes = 0
             ApproximationChange.LESS_2
-        } else if (approximationVotes < 0) {
-            mApproxHPVMWrapper.hpvmAdaptiveApproximateLess()
-            approximationVotes += 1
-            ApproximationChange.LESS
         } else if (approximationVotes >= 2) {
             // Results stable. Approximate more
             mApproxHPVMWrapper.hpvmAdaptiveApproximateMore()

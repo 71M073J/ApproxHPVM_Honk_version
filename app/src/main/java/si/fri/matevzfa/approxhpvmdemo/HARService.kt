@@ -60,7 +60,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
             mClassifier.classify(signalImage)
         }
 
-        mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper, 3, 1)
+        mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper)
 
         // Init classification thread
         mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
