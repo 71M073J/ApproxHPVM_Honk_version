@@ -78,7 +78,9 @@ class MainActivity : AppCompatActivity() {
                 when (intent.action) {
                     BROADCAST_SOFTMAX -> {
                         val argMax = intent.getIntExtra("argMax", -1)
+                        val usedConf = intent.getIntExtra("usedConf", -1)
                         updateClass(argMax)
+                        updateConf(usedConf)
                     }
                 }
             }
@@ -108,6 +110,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         findViewById<TextView>(R.id.argMax).text = text
+    }
+
+    private fun updateConf(usedConf: Int) {
+        Log.i(TAG, "updateConf $usedConf")
+
+        findViewById<TextView>(R.id.sample_text).text = usedConf.toString()
     }
 
     /**

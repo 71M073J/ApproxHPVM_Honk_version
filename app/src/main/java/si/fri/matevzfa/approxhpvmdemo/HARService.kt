@@ -59,9 +59,12 @@ class HARService : Service(), LifecycleOwner {
             Log.d(TAG, "Received SoftMax ${softMax.joinToString(", ")}")
 
             val argMax: Int = softMax.indices.maxByOrNull { softMax[it] } ?: -1
+            val usedConf: Int = mApproxHVPMWrapper.hpvmAdaptiveGetConfigIndex();
             Intent().also { intent ->
-                intent.setAction(MainActivity.BROADCAST_SOFTMAX);
+                intent.action = MainActivity.BROADCAST_SOFTMAX;
                 intent.putExtra("argMax", argMax)
+                intent.putExtra("usedConf", usedConf);
+
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }
 
