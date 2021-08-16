@@ -8,14 +8,16 @@ import android.content.Context
 import android.content.Intent
 import android.os.HandlerThread
 import android.os.IBinder
+import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import java.util.*
 
 
-class HARService : Service(), LifecycleOwner {
+class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
 
 
     private lateinit var lifecycleRegistry: LifecycleRegistry
@@ -30,6 +32,9 @@ class HARService : Service(), LifecycleOwner {
 
     private lateinit var mAdaptationEngine: AdaptationEngine
 
+    private var isTtsInit: Boolean = false
+    private lateinit var tts: TextToSpeech
+
     private val TAG = "HARService"
 
     val ONGOING_NOTIFICATION_ID = 1112123
@@ -38,6 +43,8 @@ class HARService : Service(), LifecycleOwner {
 
     override fun onCreate() {
         super.onCreate()
+
+        tts = TextToSpeech(applicationContext, this)
 
         lifecycleRegistry = LifecycleRegistry(this)
 
@@ -53,7 +60,7 @@ class HARService : Service(), LifecycleOwner {
             mClassifier.classify(signalImage)
         }
 
-        mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper, 6, 4)
+        mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper, 3, 1)
 
         // Init classification thread
         mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
@@ -72,6 +79,8 @@ class HARService : Service(), LifecycleOwner {
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }
 
+            runTts(argMax, usedConf)
+
             mAdaptationEngine.actUpon(softMax, argMax)
         }
 
@@ -80,6 +89,24 @@ class HARService : Service(), LifecycleOwner {
         startSensing()
 
         lifecycleRegistry.currentState = Lifecycle.State.CREATED
+    }
+
+    private fun runTts(argMax: Int, usedConf: Int) {
+        val text = when (argMax) {
+            0 -> "Walking"
+            1 -> "Upstairs"
+            2 -> "Downstairs"
+            3 -> "Sitting"
+            4 -> "Standing"
+            5 -> "Lying"
+            else -> ""
+        }
+
+        if (isTtsInit) {
+            if (isTtsInit) {
+                tts.speak("$text, $usedConf", TextToSpeech.QUEUE_FLUSH, null, "speechRequest")
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -169,5 +196,10 @@ class HARService : Service(), LifecycleOwner {
             }
             return false
         }
+    }
+
+    override fun onInit(status: Int) {
+        isTtsInit = true
+        tts.language = Locale.ENGLISH
     }
 }

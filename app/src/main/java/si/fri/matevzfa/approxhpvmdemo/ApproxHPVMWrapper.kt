@@ -72,6 +72,6 @@ class ApproxHPVMWrapper(context: Context) : LifecycleObserver {
     external fun hpvmAdaptiveGetConfigIndex(): Int;
 
     @Suppress("KotlinJniMissingFunction")
-    external fun hpvmAdaptiveSetConfigIndex(): Int;
+    external fun hpvmAdaptiveSetConfigIndex(idx: Int): Int;
 
 }
