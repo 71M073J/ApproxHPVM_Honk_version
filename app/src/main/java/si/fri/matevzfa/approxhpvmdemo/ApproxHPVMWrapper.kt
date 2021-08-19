@@ -62,6 +62,18 @@ class ApproxHPVMWrapper(context: Context) : LifecycleObserver {
     @Suppress("KotlinJniMissingFunction")
     external fun hpvmInference(input: FloatArray, output: FloatArray);
 
+    fun hpvmInferenceWithConfig(input: FloatArray, output: FloatArray, configIdx: Int) {
+        // Save index
+        val currentIdx = hpvmAdaptiveGetConfigIndex()
+
+        // Run inference
+        hpvmAdaptiveSetConfigIndex(configIdx)
+        hpvmInference(input, output)
+
+        // Restore index
+        hpvmAdaptiveSetConfigIndex(currentIdx)
+    }
+
     @Suppress("KotlinJniMissingFunction")
     external fun hpvmAdaptiveApproximateMore();
 
