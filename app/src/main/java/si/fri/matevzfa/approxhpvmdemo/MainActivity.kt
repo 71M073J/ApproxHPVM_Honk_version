@@ -101,17 +101,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateClass(argMax: Int) {
         Log.i(TAG, "updateClass $argMax")
-        val text = when (argMax) {
-            0 -> "Walking"
-            1 -> "Upstairs"
-            2 -> "Downstairs"
-            3 -> "Sitting"
-            4 -> "Standing"
-            5 -> "Lying"
-            else -> ""
-        }
 
-        findViewById<TextView>(R.id.argMax).text = text
+        findViewById<TextView>(R.id.argMax).text = activityName(argMax)
     }
 
     private fun updateConf(usedConf: Int) {

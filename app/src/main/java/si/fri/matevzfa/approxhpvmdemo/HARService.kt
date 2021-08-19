@@ -44,9 +44,10 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
 
-        tts = TextToSpeech(applicationContext, this)
-
         lifecycleRegistry = LifecycleRegistry(this)
+
+        // Init text-to-speech
+        tts = TextToSpeech(applicationContext, this)
 
         // Init HPVM
         mApproxHVPMWrapper = ApproxHPVMWrapper(this)
@@ -92,15 +93,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
     }
 
     private fun runTts(argMax: Int, usedConf: Int) {
-        val text = when (argMax) {
-            0 -> "Walking"
-            1 -> "Upstairs"
-            2 -> "Downstairs"
-            3 -> "Sitting"
-            4 -> "Standing"
-            5 -> "Lying"
-            else -> ""
-        }
+        val text = activityName(argMax)
 
         if (isTtsInit) {
             if (isTtsInit) {
@@ -123,11 +116,14 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
         super.onDestroy()
         Log.i(TAG, "onDestroy")
 
+
         stopSensing()
 
         // Gracefully stop the HandlerThread after all enqueued work is completed
         mHandlerThreadSensors.quitSafely()
         mHandlerThreadClassify.quitSafely()
+
+        tts.shutdown()
 
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
     }
