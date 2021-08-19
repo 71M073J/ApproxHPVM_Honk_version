@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.HandlerThread
 import android.os.IBinder
 import android.speech.tts.TextToSpeech
@@ -14,6 +15,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import java.time.Instant
 import java.util.*
 
 
@@ -28,9 +30,12 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
     private lateinit var mSensorSampler: HARSensorSampler
 
     private lateinit var mHandlerThreadClassify: HandlerThread
-    private lateinit var mClassifier: HARClassifier
+    private lateinit var mClassifier: HARClassifierWithBaseline
 
     private lateinit var mAdaptationEngine: AdaptationEngine
+
+    private lateinit var mHandlerThreadLogging: HandlerThread
+    private lateinit var mHARClassificationLogger: HARClassificationLogger
 
     private var isTtsInit: Boolean = false
     private lateinit var tts: TextToSpeech
@@ -67,15 +72,29 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
         mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
             start()
         }
-        mClassifier = HARClassifier(mApproxHVPMWrapper, mHandlerThreadClassify) { softMax ->
+        mClassifier = HARClassifierWithBaseline(
+            mApproxHVPMWrapper,
+            mHandlerThreadClassify
+        ) { softMax, softMaxBaseline ->
             Log.d(TAG, "Received SoftMax ${softMax.joinToString(", ")}")
 
             val argMax: Int = softMax.indices.maxByOrNull { softMax[it] } ?: -1
+            val argMaxBaseline = softMaxBaseline.indices.maxByOrNull { softMaxBaseline[it] } ?: -1
             val usedConf: Int = mApproxHVPMWrapper.hpvmAdaptiveGetConfigIndex();
+
             Intent().also { intent ->
                 intent.action = MainActivity.BROADCAST_SOFTMAX;
                 intent.putExtra("argMax", argMax)
                 intent.putExtra("usedConf", usedConf);
+
+                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+            }
+
+            Intent().also { intent ->
+                intent.action = HARClassificationLogger.ACTION
+                intent.putExtra(HARClassificationLogger.USED_CONF, usedConf)
+                intent.putExtra(HARClassificationLogger.ARGMAX, argMax)
+                intent.putExtra(HARClassificationLogger.ARGMAX_BASELINE, argMaxBaseline)
 
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }
@@ -85,7 +104,14 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
             mAdaptationEngine.actUpon(softMax, argMax)
         }
 
-
+        // Init classification logger
+        mHARClassificationLogger =
+            HARClassificationLogger(Instant.now(), mHandlerThreadClassify)
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+            mHARClassificationLogger,
+            IntentFilter(HARClassificationLogger.ACTION)
+        )
+        
         startForeground()
         startSensing()
 
