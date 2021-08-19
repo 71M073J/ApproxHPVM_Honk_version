@@ -11,12 +11,12 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatterBuilder
+import java.util.concurrent.Executors
 
-class HARClassificationLogger(val startedAt: Instant, val handlerThread: HandlerThread) :
+class HARClassificationLogger(val startedAt: Instant) :
     BroadcastReceiver() {
 
     val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault())
-    val handler = Handler(handlerThread.looper)
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
@@ -24,26 +24,24 @@ class HARClassificationLogger(val startedAt: Instant, val handlerThread: Handler
         val argMax = intent?.getIntExtra(ARGMAX, -1)
         val usedConf = intent?.getIntExtra(USED_CONF, -1)
 
-        handler.post {
-            val db = Room.databaseBuilder(
-                context!!.applicationContext,
-                AppDatabase::class.java, "classification-log"
-            ).build()
+        val db = Room.databaseBuilder(
+            context!!.applicationContext,
+            AppDatabase::class.java, "classification-log"
+        ).allowMainThreadQueries().build()
 
-            val classification =
-                Classification(
-                    uid = 0,
-                    timestamp = dateTimeFormatter.format(Instant.now()),
-                    runStart = dateTimeFormatter.format(startedAt),
-                    usedConfig = usedConf,
-                    argMax = argMax,
-                    argMaxBaseline = argMaxBaseline
-                )
+        val classification =
+            Classification(
+                uid = 0,
+                timestamp = dateTimeFormatter.format(Instant.now()),
+                runStart = dateTimeFormatter.format(startedAt),
+                usedConfig = usedConf,
+                argMax = argMax,
+                argMaxBaseline = argMaxBaseline
+            )
 
-            Log.i(TAG, "Adding $classification")
+        Log.i(TAG, "Adding $classification")
 
-            db.classificationDao().insertAll(classification)
-        }
+        db.classificationDao().insertAll(classification)
     }
 
 

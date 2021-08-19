@@ -105,13 +105,12 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
         }
 
         // Init classification logger
-        mHARClassificationLogger =
-            HARClassificationLogger(Instant.now(), mHandlerThreadClassify)
+        mHARClassificationLogger = HARClassificationLogger(Instant.now())
         LocalBroadcastManager.getInstance(this).registerReceiver(
             mHARClassificationLogger,
             IntentFilter(HARClassificationLogger.ACTION)
         )
-        
+
         startForeground()
         startSensing()
 
