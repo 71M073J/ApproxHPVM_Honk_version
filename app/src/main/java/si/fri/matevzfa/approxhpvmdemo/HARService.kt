@@ -141,6 +141,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
         super.onDestroy()
         Log.i(TAG, "onDestroy")
 
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mHARClassificationLogger)
 
         stopSensing()
 
