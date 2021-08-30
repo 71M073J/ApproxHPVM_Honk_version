@@ -3,26 +3,25 @@ package si.fri.matevzfa.approxhpvmdemo
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Handler
-import android.os.HandlerThread
 import android.util.Log
 import androidx.room.*
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatterBuilder
-import java.util.concurrent.Executors
 
 class HARClassificationLogger(val startedAt: Instant) :
     BroadcastReceiver() {
 
-    val dateTimeFormatter = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneId.systemDefault())
+    val dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
         val argMaxBaseline = intent?.getIntExtra(ARGMAX_BASELINE, -1)
         val argMax = intent?.getIntExtra(ARGMAX, -1)
         val usedConf = intent?.getIntExtra(USED_CONF, -1)
+        val confidenceConcat = intent?.getFloatArrayExtra(CONFIDENCE)?.joinToString(",")
+        val confidenceBaselineConcat =
+            intent?.getFloatArrayExtra(CONFIDENCE_BASELINE)?.joinToString(",")
 
         val db = Room.databaseBuilder(
             context!!.applicationContext,
@@ -32,16 +31,20 @@ class HARClassificationLogger(val startedAt: Instant) :
         val classification =
             Classification(
                 uid = 0,
-                timestamp = dateTimeFormatter.format(Instant.now()),
-                runStart = dateTimeFormatter.format(startedAt),
-                usedConfig = usedConf,
-                argMax = argMax,
-                argMaxBaseline = argMaxBaseline
+                timestamp = dateTimeFormatter.format(Instant.now())!!,
+                runStart = dateTimeFormatter.format(startedAt)!!,
+                usedConfig = usedConf!!,
+                argMax = argMax!!,
+                argMaxBaseline = argMaxBaseline!!,
+                confidenceConcat = confidenceConcat ?: "",
+                confidenceBaselineConcat = confidenceBaselineConcat ?: "",
             )
 
         Log.i(TAG, "Adding $classification")
 
         db.classificationDao().insertAll(classification)
+
+        db.close()
     }
 
 
@@ -59,6 +62,8 @@ class HARClassificationLogger(val startedAt: Instant) :
         @ColumnInfo(name = "used_config") val usedConfig: Int?,
         @ColumnInfo(name = "argmax") val argMax: Int?,
         @ColumnInfo(name = "argmax_baseline") val argMaxBaseline: Int?,
+        @ColumnInfo(name = "confidence_concat") val confidenceConcat: String?,
+        @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
     )
 
     @Dao
@@ -78,11 +83,13 @@ class HARClassificationLogger(val startedAt: Instant) :
 
 
     companion object {
-        val TAG = "HARClassificationLogger"
+        const val TAG = "HARClassificationLogger"
 
-        val ACTION = "HARClassificationLogger.BROADCAST"
-        val USED_CONF = "USED_CONF"
-        val ARGMAX = "ARGMAX"
-        val ARGMAX_BASELINE = "ARGMAX_BASELINE"
+        const val ACTION = "HARClassificationLogger.BROADCAST"
+        const val USED_CONF = "USED_CONF"
+        const val ARGMAX = "ARGMAX"
+        const val ARGMAX_BASELINE = "ARGMAX_BASELINE"
+        const val CONFIDENCE = "CONFIDENCE"
+        const val CONFIDENCE_BASELINE = "CONFIDENCE_BASELINE"
     }
 }

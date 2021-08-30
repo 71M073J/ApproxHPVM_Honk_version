@@ -95,6 +95,8 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
                 intent.putExtra(HARClassificationLogger.USED_CONF, usedConf)
                 intent.putExtra(HARClassificationLogger.ARGMAX, argMax)
                 intent.putExtra(HARClassificationLogger.ARGMAX_BASELINE, argMaxBaseline)
+                intent.putExtra(HARClassificationLogger.CONFIDENCE, softMax)
+                intent.putExtra(HARClassificationLogger.CONFIDENCE_BASELINE, softMaxBaseline)
 
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }
