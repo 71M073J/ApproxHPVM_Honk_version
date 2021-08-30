@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -27,7 +26,7 @@ class MainActivity : AppCompatActivity() {
 
         //
         // Example of a call to a native method
-        findViewById<TextView>(R.id.sample_text).text = ""
+        findViewById<TextView>(R.id.usedConf).text = ""
 
         //
         // Create notification channel
@@ -108,7 +107,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateConf(usedConf: Int) {
         Log.i(TAG, "updateConf $usedConf")
 
-        findViewById<TextView>(R.id.sample_text).text = usedConf.toString()
+        findViewById<TextView>(R.id.usedConf).text = usedConf.toString()
     }
 
     /**
