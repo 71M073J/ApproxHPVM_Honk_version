@@ -75,7 +75,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
         mClassifier = HARClassifierWithBaseline(
             mApproxHVPMWrapper,
             mHandlerThreadClassify
-        ) { softMax, softMaxBaseline ->
+        ) { softMax, softMaxBaseline, signalImage ->
             Log.d(TAG, "Received SoftMax ${softMax.joinToString(", ")}")
 
             val argMax: Int = softMax.indices.maxByOrNull { softMax[it] } ?: -1
@@ -97,6 +97,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
                 intent.putExtra(HARClassificationLogger.ARGMAX_BASELINE, argMaxBaseline)
                 intent.putExtra(HARClassificationLogger.CONFIDENCE, softMax)
                 intent.putExtra(HARClassificationLogger.CONFIDENCE_BASELINE, softMaxBaseline)
+                intent.putExtra(HARClassificationLogger.SIGNAL_IMAGE, signalImage)
 
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }

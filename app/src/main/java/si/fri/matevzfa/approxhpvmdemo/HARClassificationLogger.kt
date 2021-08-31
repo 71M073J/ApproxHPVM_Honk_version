@@ -22,11 +22,16 @@ class HARClassificationLogger(val startedAt: Instant) :
         val confidenceConcat = intent?.getFloatArrayExtra(CONFIDENCE)?.joinToString(",")
         val confidenceBaselineConcat =
             intent?.getFloatArrayExtra(CONFIDENCE_BASELINE)?.joinToString(",")
+        val signalImage =
+            intent?.getFloatArrayExtra(SIGNAL_IMAGE)?.joinToString(",")
 
         val db = Room.databaseBuilder(
             context!!.applicationContext,
             AppDatabase::class.java, "classification-log"
-        ).allowMainThreadQueries().build()
+        )
+            .allowMainThreadQueries()
+            .fallbackToDestructiveMigration()
+            .build()
 
         val classification =
             Classification(
@@ -38,6 +43,7 @@ class HARClassificationLogger(val startedAt: Instant) :
                 argMaxBaseline = argMaxBaseline!!,
                 confidenceConcat = confidenceConcat ?: "",
                 confidenceBaselineConcat = confidenceBaselineConcat ?: "",
+                signalImage = signalImage ?: "",
             )
 
         Log.i(TAG, "Adding $classification")
@@ -48,7 +54,7 @@ class HARClassificationLogger(val startedAt: Instant) :
     }
 
 
-    @Database(entities = arrayOf(Classification::class), version = 1)
+    @Database(entities = [Classification::class], version = 3)
     abstract class AppDatabase : RoomDatabase() {
         abstract fun classificationDao(): UserDao
     }
@@ -64,7 +70,11 @@ class HARClassificationLogger(val startedAt: Instant) :
         @ColumnInfo(name = "argmax_baseline") val argMaxBaseline: Int?,
         @ColumnInfo(name = "confidence_concat") val confidenceConcat: String?,
         @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
-    )
+        @ColumnInfo(name = "signal_image") val signalImage: String?,
+    ) {
+        override fun toString(): String =
+            "Classification($timestamp, base=$argMaxBaseline, approx=$argMax)"
+    }
 
     @Dao
     interface UserDao {
@@ -91,5 +101,6 @@ class HARClassificationLogger(val startedAt: Instant) :
         const val ARGMAX_BASELINE = "ARGMAX_BASELINE"
         const val CONFIDENCE = "CONFIDENCE"
         const val CONFIDENCE_BASELINE = "CONFIDENCE_BASELINE"
+        const val SIGNAL_IMAGE = "SIGNAL_IMAGE"
     }
 }

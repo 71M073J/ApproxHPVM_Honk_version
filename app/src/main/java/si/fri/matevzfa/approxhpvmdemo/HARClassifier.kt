@@ -23,7 +23,7 @@ class HARClassifier(
 class HARClassifierWithBaseline(
     val mApproxHVPMWrapper: ApproxHPVMWrapper,
     handlerThread: HandlerThread,
-    val callback: (FloatArray, FloatArray) -> Unit = { _, _ -> }
+    val callback: (FloatArray, FloatArray, FloatArray) -> Unit = { softMax, softMaxBasline, signalImage -> }
 ) {
     private val numClasses = 6
     private val handler = Handler(handlerThread.looper)
@@ -34,7 +34,7 @@ class HARClassifierWithBaseline(
             val outputBaseline = FloatArray(numClasses)
             mApproxHVPMWrapper.hpvmInference(signalImage, output)
             mApproxHVPMWrapper.hpvmInferenceWithConfig(signalImage, outputBaseline, 0)
-            callback(output, outputBaseline)
+            callback(output, outputBaseline, signalImage)
         }
     }
 }

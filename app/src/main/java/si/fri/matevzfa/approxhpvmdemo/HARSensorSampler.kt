@@ -168,12 +168,6 @@ class HARSensorSampler(
         filterWith(gyroData, 1, filterGyro20HzY)
         filterWith(gyroData, 2, filterGyro20HzZ)
 
-        Log.d(TAG, "signal image info - ")
-        Log.d(TAG, "signal image info - ${printInfo("bodyAccelData", bodyAccelData)}")
-        Log.d(TAG, "signal image info - ${printInfo("gyroData", gyroData)}")
-        Log.d(TAG, "signal image info - ${printInfo("totalAccelData", totalAccelData)}")
-        Log.d(TAG, "signal image info - ")
-
         // Prepare signal image
         val signalImage = FloatArray(3 * 32 * 32)
         fillSignalImageChannel(signalImage, 0, bodyAccelData)
