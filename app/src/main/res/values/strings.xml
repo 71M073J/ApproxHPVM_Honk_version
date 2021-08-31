@@ -3,4 +3,6 @@
     <string name="serviceSwitch">Enable HAR</string>
     <string name="usedConfText">Last used approximation configuration</string>
     <string name="argMaxText">Predicted activity</string>
+    <string name="buttonTraceClassify">Trace classification</string>
+    <string name="traces_info">Choose which trace to run adaptable AMC on.</string>
 </resources>

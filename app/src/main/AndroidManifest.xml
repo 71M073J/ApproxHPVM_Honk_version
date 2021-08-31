@@ -2,9 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="si.fri.matevzfa.approxhpvmdemo">
 
-
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.TTS_SERVICE" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="false"
@@ -13,12 +17,17 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ApproxHPVMDemo">
+
+        <activity
+            android:name=".TraceAdaptation"
+            android:parentActivityName=".MainActivity" />
+
         <service
-            android:name="si.fri.matevzfa.approxhpvmdemo.HARService"
+            android:name=".HARService"
             android:enabled="true"
             android:exported="false" />
 
-        <activity android:name="si.fri.matevzfa.approxhpvmdemo.MainActivity">
+        <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -26,11 +35,5 @@
             </intent-filter>
         </activity>
     </application>
-
-    <queries>
-        <intent>
-            <action android:name="android.intent.action.TTS_SERVICE" />
-        </intent>
-    </queries>
 
 </manifest>

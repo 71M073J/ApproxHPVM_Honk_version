@@ -66,7 +66,8 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
             mClassifier.classify(signalImage)
         }
 
-        mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper)
+        // mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper)
+        mAdaptationEngine = KalmanAdaptation(mApproxHVPMWrapper)
 
         // Init classification thread
         mHandlerThreadClassify = HandlerThread("HARService.mHandlerThreadClassify").apply {
@@ -80,7 +81,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
 
             val argMax: Int = softMax.indices.maxByOrNull { softMax[it] } ?: -1
             val argMaxBaseline = softMaxBaseline.indices.maxByOrNull { softMaxBaseline[it] } ?: -1
-            val usedConf: Int = mApproxHVPMWrapper.hpvmAdaptiveGetConfigIndex();
+            val usedConf: Int = mAdaptationEngine.configuration();
 
             Intent().also { intent ->
                 intent.action = MainActivity.BROADCAST_SOFTMAX;
@@ -98,6 +99,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
                 intent.putExtra(HARClassificationLogger.CONFIDENCE, softMax)
                 intent.putExtra(HARClassificationLogger.CONFIDENCE_BASELINE, softMaxBaseline)
                 intent.putExtra(HARClassificationLogger.SIGNAL_IMAGE, signalImage)
+                intent.putExtra(HARClassificationLogger.USED_ENGINE, mAdaptationEngine.name())
 
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }

@@ -12,8 +12,6 @@ import java.time.format.DateTimeFormatter
 class HARClassificationLogger(val startedAt: Instant) :
     BroadcastReceiver() {
 
-    val dateTimeFormatter = DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())
-
     override fun onReceive(context: Context?, intent: Intent?) {
 
         val argMaxBaseline = intent?.getIntExtra(ARGMAX_BASELINE, -1)
@@ -24,26 +22,23 @@ class HARClassificationLogger(val startedAt: Instant) :
             intent?.getFloatArrayExtra(CONFIDENCE_BASELINE)?.joinToString(",")
         val signalImage =
             intent?.getFloatArrayExtra(SIGNAL_IMAGE)?.joinToString(",")
+        val usedEngine = intent?.getStringExtra(USED_ENGINE)
 
-        val db = Room.databaseBuilder(
-            context!!.applicationContext,
-            AppDatabase::class.java, "classification-log"
-        )
-            .allowMainThreadQueries()
-            .fallbackToDestructiveMigration()
-            .build()
+
+        val db = db(context!!)
 
         val classification =
             Classification(
                 uid = 0,
-                timestamp = dateTimeFormatter.format(Instant.now())!!,
-                runStart = dateTimeFormatter.format(startedAt)!!,
+                timestamp = Companion.dateTimeFormatter.format(Instant.now())!!,
+                runStart = Companion.dateTimeFormatter.format(startedAt)!!,
                 usedConfig = usedConf!!,
                 argMax = argMax!!,
                 argMaxBaseline = argMaxBaseline!!,
                 confidenceConcat = confidenceConcat ?: "",
                 confidenceBaselineConcat = confidenceBaselineConcat ?: "",
                 signalImage = signalImage ?: "",
+                usedEngine = usedEngine!!,
             )
 
         Log.i(TAG, "Adding $classification")
@@ -54,7 +49,7 @@ class HARClassificationLogger(val startedAt: Instant) :
     }
 
 
-    @Database(entities = [Classification::class], version = 3)
+    @Database(entities = [Classification::class], version = 4)
     abstract class AppDatabase : RoomDatabase() {
         abstract fun classificationDao(): UserDao
     }
@@ -71,9 +66,10 @@ class HARClassificationLogger(val startedAt: Instant) :
         @ColumnInfo(name = "confidence_concat") val confidenceConcat: String?,
         @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
         @ColumnInfo(name = "signal_image") val signalImage: String?,
+        @ColumnInfo(name = "used_engine") val usedEngine: String?,
     ) {
         override fun toString(): String =
-            "Classification($timestamp, base=$argMaxBaseline, approx=$argMax)"
+            "Classification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax)"
     }
 
     @Dao
@@ -102,5 +98,18 @@ class HARClassificationLogger(val startedAt: Instant) :
         const val CONFIDENCE = "CONFIDENCE"
         const val CONFIDENCE_BASELINE = "CONFIDENCE_BASELINE"
         const val SIGNAL_IMAGE = "SIGNAL_IMAGE"
+        const val USED_ENGINE = "USED_ENGINE"
+
+
+        fun db(context: Context) = Room.databaseBuilder(
+            context.applicationContext,
+            AppDatabase::class.java, "classification-log"
+        )
+            .allowMainThreadQueries()
+            .fallbackToDestructiveMigration()
+            .build()
+
+        val dateTimeFormatter =
+            DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())
     }
 }

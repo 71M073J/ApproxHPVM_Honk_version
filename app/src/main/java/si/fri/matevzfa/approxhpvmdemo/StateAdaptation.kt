@@ -19,7 +19,7 @@ class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
     var approximationVotes = 0
 
 
-    override fun actUpon(softMax: FloatArray, argMax: Int) {
+    override fun actUponImpl(softMax: FloatArray, argMax: Int) {
         Log.i(TAG, "--")
         Log.i(TAG, "BEGIN")
         Log.i(TAG, "approximationVotes $approximationVotes")
@@ -76,6 +76,8 @@ class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
         val (a: Int, b: Int) = lastNStates.takeLast(2)
         return a == b
     }
+
+    override fun name(): String = "StateAdaptation"
 
     companion object {
         private val TAG: String = "StateAdaptation"

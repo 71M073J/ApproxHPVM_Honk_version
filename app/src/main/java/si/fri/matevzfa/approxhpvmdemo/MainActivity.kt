@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -61,6 +62,14 @@ class MainActivity : AppCompatActivity() {
                         stopService(intent)
                     }
                 }
+            }
+        }
+
+        //
+        // Trace classification button
+        findViewById<Button>(R.id.bTraceClassify).apply {
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, TraceAdaptation::class.java))
             }
         }
 
