@@ -1,6 +1,6 @@
 package si.fri.matevzfa.approxhpvmdemo.adaptation
 
-import si.fri.matevzfa.approxhpvmdemo.ApproxHPVMWrapper
+import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 
 class KalmanAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) : AdaptationEngine(approxHPVMWrapper) {
 

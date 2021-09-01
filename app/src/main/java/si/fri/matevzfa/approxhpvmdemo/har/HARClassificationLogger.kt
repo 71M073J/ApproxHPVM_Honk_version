@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.har
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -31,8 +31,8 @@ class HARClassificationLogger(private val startedAt: Instant) :
         val classification =
             Classification(
                 uid = 0,
-                timestamp = Companion.dateTimeFormatter.format(Instant.now())!!,
-                runStart = Companion.dateTimeFormatter.format(startedAt)!!,
+                timestamp = dateTimeFormatter.format(Instant.now())!!,
+                runStart = dateTimeFormatter.format(startedAt)!!,
                 usedConfig = usedConf!!,
                 argMax = argMax!!,
                 argMaxBaseline = argMaxBaseline!!,

@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.har
 
 import android.app.ActivityManager
 import android.app.Notification
@@ -15,6 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import si.fri.matevzfa.approxhpvmdemo.R
+import si.fri.matevzfa.approxhpvmdemo.activityName
 import si.fri.matevzfa.approxhpvmdemo.adaptation.AdaptationEngine
 import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
 import java.time.Instant
@@ -86,7 +88,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
             val usedConf: Int = mAdaptationEngine.configuration();
 
             Intent().also { intent ->
-                intent.action = MainActivity.BROADCAST_SOFTMAX;
+                intent.action = HARActivity.BROADCAST_SOFTMAX;
                 intent.putExtra("argMax", argMax)
                 intent.putExtra("usedConf", usedConf);
 
@@ -174,11 +176,11 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
      */
     private fun startForeground() {
         val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
+            Intent(this, HARActivity::class.java).let { notificationIntent ->
                 PendingIntent.getActivity(this, 0, notificationIntent, 0)
             }
 
-        val notification: Notification = Notification.Builder(this, MainActivity.CHANNEL_ID)
+        val notification: Notification = Notification.Builder(this, HARActivity.CHANNEL_ID)
             .setContentTitle("HAR Service")
             .setContentText("Activity recognition is running.")
             .setSmallIcon(R.drawable.ic_launcher_foreground)

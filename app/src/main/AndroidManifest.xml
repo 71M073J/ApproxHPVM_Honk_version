@@ -21,14 +21,14 @@
 
         <activity
             android:name=".TraceAdaptation"
-            android:parentActivityName=".MainActivity" />
+            android:parentActivityName=".har.HARActivity" />
 
         <service
-            android:name=".HARService"
+            android:name=".har.HARService"
             android:enabled="true"
             android:exported="false" />
 
-        <activity android:name=".MainActivity">
+        <activity android:name=".har.HARActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

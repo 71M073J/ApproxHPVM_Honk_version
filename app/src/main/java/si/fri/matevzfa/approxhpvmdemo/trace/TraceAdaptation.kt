@@ -11,6 +11,7 @@ import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
+import si.fri.matevzfa.approxhpvmdemo.har.HARClassificationLogger
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import javax.inject.Inject
