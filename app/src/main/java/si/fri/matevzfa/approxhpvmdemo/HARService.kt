@@ -15,6 +15,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import si.fri.matevzfa.approxhpvmdemo.adaptation.AdaptationEngine
+import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
 import java.time.Instant
 import java.util.*
 

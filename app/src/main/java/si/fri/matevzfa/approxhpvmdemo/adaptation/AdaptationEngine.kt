@@ -1,4 +1,6 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.adaptation
+
+import si.fri.matevzfa.approxhpvmdemo.ApproxHPVMWrapper
 
 abstract class AdaptationEngine(protected val mApproxHPVMWrapper: ApproxHPVMWrapper) {
 

@@ -12,6 +12,8 @@ import java.time.format.DateTimeFormatter
 class HARClassificationLogger(val startedAt: Instant) :
     BroadcastReceiver() {
 
+
+
     override fun onReceive(context: Context?, intent: Intent?) {
 
         val argMaxBaseline = intent?.getIntExtra(ARGMAX_BASELINE, -1)
