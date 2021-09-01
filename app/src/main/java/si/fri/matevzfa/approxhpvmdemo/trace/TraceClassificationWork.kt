@@ -54,14 +54,16 @@ class TraceClassificationWork @AssistedInject constructor(
             for (engine in engines) {
                 Log.i(TAG, "Classifying input $i with ${engine.name()}")
 
+                val usedConfig = engine.configuration()
                 val (softMax, argMax) = engine.useFor { classify(signalImage) }
+                engine.actUpon(softMax, argMax)
 
                 val tc = TraceClassification(
                     uid = 0,
                     timestamp = c.timestamp,
                     runStart = c.runStart,
                     traceRunStart = HARClassificationLogger.dateTimeFormatter.format(traceRunStart),
-                    usedConfig = c.usedConfig,
+                    usedConfig = usedConfig,
                     argMax = argMax,
                     confidenceConcat = softMax.joinToString(","),
                     argMaxBaseline = argMaxBaseline,

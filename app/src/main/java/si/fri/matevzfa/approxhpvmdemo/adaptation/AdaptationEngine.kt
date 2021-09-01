@@ -31,7 +31,7 @@ abstract class AdaptationEngine(protected val mApproxHPVMWrapper: ApproxHPVMWrap
      * This method must implement adaptation, given a softMax confidence array and the index
      * of predicted class.
      */
-    abstract fun actUponImpl(softMax: FloatArray, argMax: Int)
+    protected abstract fun actUponImpl(softMax: FloatArray, argMax: Int)
 
     /**
      * Returns engine name
