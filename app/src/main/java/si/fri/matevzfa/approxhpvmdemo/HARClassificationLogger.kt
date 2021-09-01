@@ -8,11 +8,13 @@ import androidx.room.*
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-class HARClassificationLogger(val startedAt: Instant) :
+class HARClassificationLogger(private val startedAt: Instant) :
     BroadcastReceiver() {
 
-
+    @Inject
+    lateinit var dao: ClassificationDao
 
     override fun onReceive(context: Context?, intent: Intent?) {
 
@@ -25,9 +27,6 @@ class HARClassificationLogger(val startedAt: Instant) :
         val signalImage =
             intent?.getFloatArrayExtra(SIGNAL_IMAGE)?.joinToString(",")
         val usedEngine = intent?.getStringExtra(USED_ENGINE)
-
-
-        val db = db(context!!)
 
         val classification =
             Classification(
@@ -45,17 +44,13 @@ class HARClassificationLogger(val startedAt: Instant) :
 
         Log.i(TAG, "Adding $classification")
 
-        db.classificationDao().insertAll(classification)
-
-        db.close()
+        dao.insertAll(classification)
     }
-
 
     @Database(entities = [Classification::class], version = 4)
     abstract class AppDatabase : RoomDatabase() {
         abstract fun classificationDao(): ClassificationDao
     }
-
 
     @Entity
     data class Classification(
@@ -95,7 +90,6 @@ class HARClassificationLogger(val startedAt: Instant) :
         fun delete(user: Classification)
     }
 
-
     companion object {
         const val TAG = "HARClassificationLogger"
 
@@ -107,15 +101,6 @@ class HARClassificationLogger(val startedAt: Instant) :
         const val CONFIDENCE_BASELINE = "CONFIDENCE_BASELINE"
         const val SIGNAL_IMAGE = "SIGNAL_IMAGE"
         const val USED_ENGINE = "USED_ENGINE"
-
-
-        fun db(context: Context) = Room.databaseBuilder(
-            context.applicationContext,
-            AppDatabase::class.java, "classification-log"
-        )
-            .allowMainThreadQueries()
-            .fallbackToDestructiveMigration()
-            .build()
 
         val dateTimeFormatter =
             DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())

@@ -1,18 +1,25 @@
 package si.fri.matevzfa.approxhpvmdemo
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
+import dagger.hilt.android.AndroidEntryPoint
+import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class TraceAdaptation : AppCompatActivity() {
+
+    @Inject
+    lateinit var classificationDao: ClassificationDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -20,16 +27,12 @@ class TraceAdaptation : AppCompatActivity() {
 
         supportActionBar?.title = "Trace classification"
 
-        val db = HARClassificationLogger.db(this)
-
-        val data = db.classificationDao().getRunStarts()
+        val data = classificationDao.getRunStarts()
 
         val adapter = Adapter(data)
 
         val recycler = findViewById<RecyclerView>(R.id.trace_list)
         recycler.adapter = adapter
-
-        db.close()
     }
 }
 

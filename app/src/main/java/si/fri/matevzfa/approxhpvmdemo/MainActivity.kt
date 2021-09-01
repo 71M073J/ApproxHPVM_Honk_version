@@ -14,9 +14,10 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dagger.hilt.android.AndroidEntryPoint
 import java.util.*
 
-
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mBroadcastReceiver: BroadcastReceiver
@@ -106,7 +107,6 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver)
     }
 
-
     private fun updateClass(argMax: Int) {
         Log.i(TAG, "updateClass $argMax")
 
@@ -118,12 +118,6 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.usedConf).text = usedConf.toString()
     }
-
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
 
     companion object {
 
