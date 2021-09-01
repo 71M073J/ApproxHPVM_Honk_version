@@ -51,7 +51,7 @@ class HARClassificationLogger(val startedAt: Instant) :
 
     @Database(entities = [Classification::class], version = 4)
     abstract class AppDatabase : RoomDatabase() {
-        abstract fun classificationDao(): UserDao
+        abstract fun classificationDao(): ClassificationDao
     }
 
 
@@ -73,12 +73,18 @@ class HARClassificationLogger(val startedAt: Instant) :
     }
 
     @Dao
-    interface UserDao {
+    interface ClassificationDao {
         @Query("SELECT * FROM classification")
         fun getAll(): List<Classification>
 
         @Query("SELECT * FROM classification WHERE uid IN (:userIds)")
         fun loadAllByIds(userIds: IntArray): List<Classification>
+
+        @Query("SELECT * FROM classification WHERE run_start = :runStart")
+        fun loadAllByRunStart(runStart: String?): List<Classification>
+
+        @Query("SELECT DISTINCT run_start FROM classification")
+        fun getRunStarts(): List<String>
 
         @Insert
         fun insertAll(vararg users: Classification)

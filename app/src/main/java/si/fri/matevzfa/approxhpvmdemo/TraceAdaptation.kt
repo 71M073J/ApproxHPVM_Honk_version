@@ -6,17 +6,11 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ListView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import java.text.DateFormat
-import java.time.chrono.Chronology
 import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeFormatterBuilder
 import java.time.format.FormatStyle
-import java.util.*
 
 class TraceAdaptation : AppCompatActivity() {
 
@@ -28,7 +22,7 @@ class TraceAdaptation : AppCompatActivity() {
 
         val db = HARClassificationLogger.db(this)
 
-        val data = db.classificationDao().getAll().map { it.runStart }.distinct()
+        val data = db.classificationDao().getRunStarts()
 
         val adapter = Adapter(data)
 
