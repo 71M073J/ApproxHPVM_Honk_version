@@ -3,12 +3,8 @@ package si.fri.matevzfa.approxhpvmdemo.har
 import android.content.Context
 import android.content.res.AssetManager
 import android.util.Log
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
-import androidx.lifecycle.OnLifecycleEvent
 
-
-class ApproxHPVMWrapper(context: Context) : LifecycleObserver {
+class ApproxHPVMWrapper(context: Context)  {
     companion object {
         const val TAG = "ApproxHPVMWrapper"
 
@@ -26,15 +22,13 @@ class ApproxHPVMWrapper(context: Context) : LifecycleObserver {
     @Suppress("unused")
     protected var hpvmRootInPtr: Long = 0
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_CREATE)
-    private fun init() {
+    fun init() {
         Log.i(TAG, "Initializing ApproxHPVMWrapper")
 
         hpvmInit(assetManager)
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-    private fun cleanup() {
+    fun cleanup() {
         Log.i(TAG, "Cleaning up ApproxHPVMWrapper")
 
         hpvmCleanup()

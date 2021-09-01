@@ -6,6 +6,12 @@ abstract class AdaptationEngine(protected val mApproxHPVMWrapper: ApproxHPVMWrap
 
     private var configuration = 0
 
+    fun useFor(block: () -> Unit) {
+        mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(configuration)
+        block()
+        configuration = mApproxHPVMWrapper.hpvmAdaptiveGetConfigIndex()
+    }
+
     fun actUpon(softMax: FloatArray, argMax: Int) {
         // Set to this adaptation engine's configuration index
         mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(configuration)

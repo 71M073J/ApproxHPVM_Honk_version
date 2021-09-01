@@ -4,12 +4,15 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import androidx.room.*
+import dagger.hilt.android.AndroidEntryPoint
+import si.fri.matevzfa.approxhpvmdemo.data.Classification
+import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
+@AndroidEntryPoint
 class HARClassificationLogger(private val startedAt: Instant) :
     BroadcastReceiver() {
 
@@ -47,49 +50,6 @@ class HARClassificationLogger(private val startedAt: Instant) :
         dao.insertAll(classification)
     }
 
-    @Database(entities = [Classification::class], version = 4)
-    abstract class AppDatabase : RoomDatabase() {
-        abstract fun classificationDao(): ClassificationDao
-    }
-
-    @Entity
-    data class Classification(
-        @PrimaryKey(autoGenerate = true) val uid: Int,
-        @ColumnInfo(name = "timestamp") val timestamp: String?,
-        @ColumnInfo(name = "run_start") val runStart: String?,
-        @ColumnInfo(name = "used_config") val usedConfig: Int?,
-        @ColumnInfo(name = "argmax") val argMax: Int?,
-        @ColumnInfo(name = "argmax_baseline") val argMaxBaseline: Int?,
-        @ColumnInfo(name = "confidence_concat") val confidenceConcat: String?,
-        @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
-        @ColumnInfo(name = "signal_image") val signalImage: String?,
-        @ColumnInfo(name = "used_engine") val usedEngine: String?,
-    ) {
-        override fun toString(): String =
-            "Classification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax)"
-    }
-
-    @Dao
-    interface ClassificationDao {
-        @Query("SELECT * FROM classification")
-        fun getAll(): List<Classification>
-
-        @Query("SELECT * FROM classification WHERE uid IN (:userIds)")
-        fun loadAllByIds(userIds: IntArray): List<Classification>
-
-        @Query("SELECT * FROM classification WHERE run_start = :runStart")
-        fun loadAllByRunStart(runStart: String?): List<Classification>
-
-        @Query("SELECT DISTINCT run_start FROM classification")
-        fun getRunStarts(): List<String>
-
-        @Insert
-        fun insertAll(vararg users: Classification)
-
-        @Delete
-        fun delete(user: Classification)
-    }
-
     companion object {
         const val TAG = "HARClassificationLogger"
 
@@ -103,6 +63,6 @@ class HARClassificationLogger(private val startedAt: Instant) :
         const val USED_ENGINE = "USED_ENGINE"
 
         val dateTimeFormatter =
-            DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())
+            DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())!!
     }
 }
