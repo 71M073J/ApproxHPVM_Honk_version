@@ -34,6 +34,12 @@ object AppModule {
 
     @Singleton
     @Provides
+    fun provideTraceClassificationDao(
+        db: AppDatabase
+    ) = db.traceClassificationDao()
+
+    @Singleton
+    @Provides
     fun provideHpvm(@ApplicationContext context: Context): ApproxHPVMWrapper =
         ApproxHPVMWrapper(context).apply {
             init()
