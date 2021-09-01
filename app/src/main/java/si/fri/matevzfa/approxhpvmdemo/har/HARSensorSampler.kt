@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.har
 
 import android.content.Context
 import android.hardware.Sensor
@@ -7,11 +7,10 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.strictmode.DiskReadViolation
 import android.util.Log
+import si.fri.matevzfa.approxhpvmdemo.BuildConfig
 import uk.me.berndporr.iirj.Butterworth
 import uk.me.berndporr.iirj.Cascade
-import uk.me.berndporr.iirj.DirectFormAbstract
 
 class HARSensorSampler(
     context: Context,

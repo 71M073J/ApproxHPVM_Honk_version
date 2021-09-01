@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.har
 
 import android.app.ActivityManager
 import android.app.Notification
@@ -11,20 +11,21 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.speech.tts.TextToSpeech
 import android.util.Log
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.LifecycleRegistry
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dagger.hilt.android.AndroidEntryPoint
+import si.fri.matevzfa.approxhpvmdemo.R
+import si.fri.matevzfa.approxhpvmdemo.activityName
+import si.fri.matevzfa.approxhpvmdemo.adaptation.AdaptationEngine
+import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
 import java.time.Instant
 import java.util.*
+import javax.inject.Inject
 
+@AndroidEntryPoint
+class HARService : Service(), TextToSpeech.OnInitListener {
 
-class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
-
-
-    private lateinit var lifecycleRegistry: LifecycleRegistry
-
-    private lateinit var mApproxHVPMWrapper: ApproxHPVMWrapper
+    @Inject
+    lateinit var mApproxHVPMWrapper: ApproxHPVMWrapper
 
     private lateinit var mHandlerThreadSensors: HandlerThread
     private lateinit var mSensorSampler: HARSensorSampler
@@ -49,21 +50,17 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
     override fun onCreate() {
         super.onCreate()
 
-        lifecycleRegistry = LifecycleRegistry(this)
-
         // Init text-to-speech
         tts = TextToSpeech(applicationContext, this)
-
-        // Init HPVM
-        mApproxHVPMWrapper = ApproxHPVMWrapper(this)
-        lifecycle.addObserver(mApproxHVPMWrapper)
 
         // Init sampler
         mHandlerThreadSensors = HandlerThread("HARService.mHandlerThreadSensors").apply {
             start()
         }
         mSensorSampler = HARSensorSampler(this, mHandlerThreadSensors) { signalImage ->
-            mClassifier.classify(signalImage)
+            mAdaptationEngine.useFor {
+                mClassifier.classify(signalImage)
+            }
         }
 
         // mAdaptationEngine = StateAdaptation(mApproxHVPMWrapper)
@@ -84,7 +81,7 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
             val usedConf: Int = mAdaptationEngine.configuration();
 
             Intent().also { intent ->
-                intent.action = MainActivity.BROADCAST_SOFTMAX;
+                intent.action = HARActivity.BROADCAST_SOFTMAX;
                 intent.putExtra("argMax", argMax)
                 intent.putExtra("usedConf", usedConf);
 
@@ -118,8 +115,6 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
 
         startForeground()
         startSensing()
-
-        lifecycleRegistry.currentState = Lifecycle.State.CREATED
     }
 
     private fun runTts(argMax: Int, usedConf: Int) {
@@ -155,14 +150,6 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
         mHandlerThreadClassify.quitSafely()
 
         tts.shutdown()
-
-        lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
-    }
-
-    /* LifecycleOwner */
-
-    override fun getLifecycle(): Lifecycle {
-        return lifecycleRegistry
     }
 
     /* Helpers */
@@ -172,11 +159,11 @@ class HARService : Service(), LifecycleOwner, TextToSpeech.OnInitListener {
      */
     private fun startForeground() {
         val pendingIntent: PendingIntent =
-            Intent(this, MainActivity::class.java).let { notificationIntent ->
+            Intent(this, HARActivity::class.java).let { notificationIntent ->
                 PendingIntent.getActivity(this, 0, notificationIntent, 0)
             }
 
-        val notification: Notification = Notification.Builder(this, MainActivity.CHANNEL_ID)
+        val notification: Notification = Notification.Builder(this, HARActivity.CHANNEL_ID)
             .setContentTitle("HAR Service")
             .setContentText("Activity recognition is running.")
             .setSmallIcon(R.drawable.ic_launcher_foreground)

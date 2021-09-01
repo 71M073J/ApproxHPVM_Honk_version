@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.har
 
 import android.os.Handler
 import android.os.HandlerThread

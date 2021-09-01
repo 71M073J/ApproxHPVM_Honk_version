@@ -1,8 +1,18 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.adaptation
+
+import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 
 abstract class AdaptationEngine(protected val mApproxHPVMWrapper: ApproxHPVMWrapper) {
 
     private var configuration = 0
+
+    fun <T> useFor(block: () -> T): T {
+        mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(configuration)
+        val result = block()
+        configuration = mApproxHPVMWrapper.hpvmAdaptiveGetConfigIndex()
+
+        return result
+    }
 
     fun actUpon(softMax: FloatArray, argMax: Int) {
         // Set to this adaptation engine's configuration index

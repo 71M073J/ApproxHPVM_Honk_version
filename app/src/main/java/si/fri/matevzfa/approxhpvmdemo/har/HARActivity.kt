@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.har
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -14,16 +14,20 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
+import dagger.hilt.android.AndroidEntryPoint
+import si.fri.matevzfa.approxhpvmdemo.R
+import si.fri.matevzfa.approxhpvmdemo.TraceAdaptation
+import si.fri.matevzfa.approxhpvmdemo.activityName
 import java.util.*
 
-
-class MainActivity : AppCompatActivity() {
+@AndroidEntryPoint
+class HARActivity : AppCompatActivity() {
 
     private lateinit var mBroadcastReceiver: BroadcastReceiver
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_har)
 
         //
         // Example of a call to a native method
@@ -49,11 +53,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<SwitchCompat>(R.id.serviceSwitch).apply {
 
             // Update value
-            isChecked = HARService.isRunning(this@MainActivity)
+            isChecked = HARService.isRunning(this@HARActivity)
 
             // Set listener
             setOnCheckedChangeListener { _, isChecked ->
-                Intent(this@MainActivity, HARService::class.java).also { intent ->
+                Intent(this@HARActivity, HARService::class.java).also { intent ->
                     if (isChecked) {
                         Log.i(TAG, "Starting service")
                         startForegroundService(intent)
@@ -69,7 +73,7 @@ class MainActivity : AppCompatActivity() {
         // Trace classification button
         findViewById<Button>(R.id.bTraceClassify).apply {
             setOnClickListener {
-                startActivity(Intent(this@MainActivity, TraceAdaptation::class.java))
+                startActivity(Intent(this@HARActivity, TraceAdaptation::class.java))
             }
         }
 
@@ -106,7 +110,6 @@ class MainActivity : AppCompatActivity() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mBroadcastReceiver)
     }
 
-
     private fun updateClass(argMax: Int) {
         Log.i(TAG, "updateClass $argMax")
 
@@ -118,12 +121,6 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<TextView>(R.id.usedConf).text = usedConf.toString()
     }
-
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
 
     companion object {
 

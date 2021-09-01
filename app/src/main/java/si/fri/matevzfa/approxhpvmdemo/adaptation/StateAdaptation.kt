@@ -1,6 +1,7 @@
-package si.fri.matevzfa.approxhpvmdemo
+package si.fri.matevzfa.approxhpvmdemo.adaptation
 
 import android.util.Log
+import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import kotlin.math.max
 import kotlin.math.min
 
