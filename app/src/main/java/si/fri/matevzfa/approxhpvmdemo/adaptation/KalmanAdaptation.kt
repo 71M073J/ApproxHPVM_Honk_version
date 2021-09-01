@@ -2,7 +2,8 @@ package si.fri.matevzfa.approxhpvmdemo.adaptation
 
 import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 
-class KalmanAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) : AdaptationEngine(approxHPVMWrapper) {
+class KalmanAdaptation(approxHPVMWrapper: ApproxHPVMWrapper, val factor: Int = 2) :
+    AdaptationEngine(approxHPVMWrapper) {
 
     var currentState: Float = 1F
     var currentUncertainty: Float = 100F
@@ -44,8 +45,8 @@ class KalmanAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) : AdaptationEngine(
         val current = mApproxHPVMWrapper.hpvmAdaptiveGetConfigIndex()
         mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(current + approximationIncreaseStep)
 
-        approximationIncreaseStep *= 2
+        approximationIncreaseStep *= factor
     }
 
-    override fun name(): String = "KalmanAdaptation"
+    override fun name(): String = "KalmanAdaptation_x$factor"
 }

@@ -17,6 +17,10 @@ import si.fri.matevzfa.approxhpvmdemo.R
 import si.fri.matevzfa.approxhpvmdemo.activityName
 import si.fri.matevzfa.approxhpvmdemo.adaptation.AdaptationEngine
 import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
+import si.fri.matevzfa.approxhpvmdemo.data.AppDatabase
+import si.fri.matevzfa.approxhpvmdemo.data.Classification
+import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
+import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
 import java.time.Instant
 import java.util.*
 import javax.inject.Inject
@@ -27,6 +31,9 @@ class HARService : Service(), TextToSpeech.OnInitListener {
     @Inject
     lateinit var mApproxHVPMWrapper: ApproxHPVMWrapper
 
+    @Inject
+    lateinit var classificationDao: ClassificationDao
+
     private lateinit var mHandlerThreadSensors: HandlerThread
     private lateinit var mSensorSampler: HARSensorSampler
 
@@ -35,9 +42,6 @@ class HARService : Service(), TextToSpeech.OnInitListener {
 
     private lateinit var mAdaptationEngine: AdaptationEngine
 
-    private lateinit var mHandlerThreadLogging: HandlerThread
-    private lateinit var mHARClassificationLogger: HARClassificationLogger
-
     private var isTtsInit: Boolean = false
     private lateinit var tts: TextToSpeech
 
@@ -45,10 +49,14 @@ class HARService : Service(), TextToSpeech.OnInitListener {
 
     val ONGOING_NOTIFICATION_ID = 1112123
 
+    lateinit var startedAt: Instant
+
     /* Service */
 
     override fun onCreate() {
         super.onCreate()
+
+        startedAt = Instant.now()
 
         // Init text-to-speech
         tts = TextToSpeech(applicationContext, this)
@@ -88,30 +96,26 @@ class HARService : Service(), TextToSpeech.OnInitListener {
                 LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
             }
 
-            Intent().also { intent ->
-                intent.action = HARClassificationLogger.ACTION
-                intent.putExtra(HARClassificationLogger.USED_CONF, usedConf)
-                intent.putExtra(HARClassificationLogger.ARGMAX, argMax)
-                intent.putExtra(HARClassificationLogger.ARGMAX_BASELINE, argMaxBaseline)
-                intent.putExtra(HARClassificationLogger.CONFIDENCE, softMax)
-                intent.putExtra(HARClassificationLogger.CONFIDENCE_BASELINE, softMaxBaseline)
-                intent.putExtra(HARClassificationLogger.SIGNAL_IMAGE, signalImage)
-                intent.putExtra(HARClassificationLogger.USED_ENGINE, mAdaptationEngine.name())
-
-                LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
+            // Insert into db
+            Classification(
+                uid = 0,
+                timestamp = dateTimeFormatter.format(Instant.now())!!,
+                runStart = dateTimeFormatter.format(startedAt)!!,
+                usedConfig = usedConf,
+                argMax = argMax,
+                argMaxBaseline = argMaxBaseline,
+                confidenceConcat = softMax.joinToString(","),
+                confidenceBaselineConcat = softMaxBaseline.joinToString(","),
+                signalImage = signalImage.joinToString(","),
+                usedEngine = mAdaptationEngine.name(),
+            ).also {
+                classificationDao.insertAll(it)
             }
 
             runTts(argMax, usedConf)
 
             mAdaptationEngine.actUpon(softMax, argMax)
         }
-
-        // Init classification logger
-        mHARClassificationLogger = HARClassificationLogger(Instant.now())
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-            mHARClassificationLogger,
-            IntentFilter(HARClassificationLogger.ACTION)
-        )
 
         startForeground()
         startSensing()
@@ -140,8 +144,6 @@ class HARService : Service(), TextToSpeech.OnInitListener {
     override fun onDestroy() {
         super.onDestroy()
         Log.i(TAG, "onDestroy")
-
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mHARClassificationLogger)
 
         stopSensing()
 

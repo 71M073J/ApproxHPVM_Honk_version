@@ -3,11 +3,15 @@ package si.fri.matevzfa.approxhpvmdemo.trace
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
-import androidx.paging.PagedList
+import androidx.paging.*
+import androidx.work.CoroutineWorker
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.withIndex
 import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
 import si.fri.matevzfa.approxhpvmdemo.adaptation.NoAdaptation
 import si.fri.matevzfa.approxhpvmdemo.adaptation.StateAdaptation
@@ -15,8 +19,8 @@ import si.fri.matevzfa.approxhpvmdemo.data.Classification
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
 import si.fri.matevzfa.approxhpvmdemo.data.TraceClassification
 import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
+import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
 import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
-import si.fri.matevzfa.approxhpvmdemo.har.HARClassificationLogger
 import java.time.Instant
 
 @HiltWorker
@@ -26,25 +30,26 @@ class TraceClassificationWork @AssistedInject constructor(
     val classificationDao: ClassificationDao,
     val traceClassificationDao: TraceClassificationDao,
     val approxHPVMWrapper: ApproxHPVMWrapper,
-) : Worker(context, workerParams) {
+) : CoroutineWorker(context, workerParams) {
 
     private val forRunStart = workerParams.inputData.getString("RUN_START")
 
-    override fun doWork(): Result {
-        val ds = classificationDao.loadAllByRunStart(forRunStart)
-        val pl = PagedList.Builder(ds.create(), 10).build()
+    override suspend fun doWork(): Result {
+        val classifications = classificationDao.loadAllByRunStart(forRunStart)
 
         val traceRunStart = Instant.now()
 
         val noEngine = NoAdaptation(approxHPVMWrapper)
         val engines = mutableListOf(
-            StateAdaptation(approxHPVMWrapper),
-            KalmanAdaptation(approxHPVMWrapper),
+            StateAdaptation(approxHPVMWrapper, 1),
+            StateAdaptation(approxHPVMWrapper, 2),
+            KalmanAdaptation(approxHPVMWrapper, 1),
+            KalmanAdaptation(approxHPVMWrapper, 2),
         )
 
         val traceClassifications = mutableListOf<TraceClassification>()
 
-        for ((i, c: Classification) in pl.withIndex()) {
+        for ((i, c: Classification) in classifications.withIndex()) {
             c.signalImage ?: continue
 
             val signalImage = c.signalImage.split(",").map { it.toFloat() }.toFloatArray()
@@ -62,7 +67,7 @@ class TraceClassificationWork @AssistedInject constructor(
                     uid = 0,
                     timestamp = c.timestamp,
                     runStart = c.runStart,
-                    traceRunStart = HARClassificationLogger.dateTimeFormatter.format(traceRunStart),
+                    traceRunStart = dateTimeFormatter.format(traceRunStart),
                     usedConfig = usedConfig,
                     argMax = argMax,
                     confidenceConcat = softMax.joinToString(","),

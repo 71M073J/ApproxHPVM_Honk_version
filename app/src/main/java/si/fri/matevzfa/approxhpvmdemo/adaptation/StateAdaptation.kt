@@ -5,9 +5,10 @@ import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import kotlin.math.max
 import kotlin.math.min
 
-
-class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
+class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper, val factor: Int = 1) :
     AdaptationEngine(approxHPVMWrapper) {
+
+    private var approximationIncreaseStep = 1
 
     val nTracked: Int = 3
 
@@ -16,9 +17,7 @@ class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
     }
 
     var lastNStates = mutableListOf<Int>()
-    var lastMajorityClass: Int? = null
     var approximationVotes = 0
-
 
     override fun actUponImpl(softMax: FloatArray, argMax: Int) {
         Log.i(TAG, "--")
@@ -44,25 +43,15 @@ class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
 
         Log.i(TAG, "approximationVotes $approximationVotes")
 
-        val action = if (approximationVotes <= -2) {
+        if (approximationVotes <= -2) {
             // NN misbehaving. Approximate less and reset last N states
-            val currentIdx = mApproxHPVMWrapper.hpvmAdaptiveGetConfigIndex()
-            mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(currentIdx / 2)
+            approximateLess()
             approximationVotes = 0
-            ApproximationChange.LESS_2
         } else if (approximationVotes >= 2) {
             // Results stable. Approximate more
-            mApproxHPVMWrapper.hpvmAdaptiveApproximateMore()
+            approximateMore()
             approximationVotes = 0
-            ApproximationChange.MORE
-        } else {
-            ApproximationChange.NONE
         }
-
-        Log.i(TAG, "action $action")
-
-        Log.i(TAG, "END")
-        Log.i(TAG, "--")
     }
 
     private fun addState(state: Int) {
@@ -73,12 +62,26 @@ class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper) :
         lastNStates.add(state)
     }
 
+    private fun approximateLess() {
+        val current = mApproxHPVMWrapper.hpvmAdaptiveGetConfigIndex()
+        mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(current / 2)
+
+        approximationIncreaseStep = 1
+    }
+
+    private fun approximateMore() {
+        val current = mApproxHPVMWrapper.hpvmAdaptiveGetConfigIndex()
+        mApproxHPVMWrapper.hpvmAdaptiveSetConfigIndex(current + approximationIncreaseStep)
+
+        approximationIncreaseStep *= factor
+    }
+
     private fun areLastTwoEqual(): Boolean {
         val (a: Int, b: Int) = lastNStates.takeLast(2)
         return a == b
     }
 
-    override fun name(): String = "StateAdaptation"
+    override fun name(): String = "StateAdaptation_x$factor"
 
     companion object {
         private val TAG: String = "StateAdaptation"

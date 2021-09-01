@@ -1,5 +1,7 @@
 package si.fri.matevzfa.approxhpvmdemo
 
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 fun activityName(index: Int) =
     when (index) {
@@ -11,3 +13,6 @@ fun activityName(index: Int) =
         5 -> "Lying"
         else -> "UNKNOWN_ACTIVITY"
     }
+
+val dateTimeFormatter =
+    DateTimeFormatter.ISO_OFFSET_DATE_TIME.withZone(ZoneId.systemDefault())!!

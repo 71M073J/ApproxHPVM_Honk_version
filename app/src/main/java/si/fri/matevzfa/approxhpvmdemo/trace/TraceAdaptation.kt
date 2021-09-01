@@ -17,7 +17,6 @@ import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.qualifiers.ApplicationContext
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
-import si.fri.matevzfa.approxhpvmdemo.har.HARClassificationLogger
 import si.fri.matevzfa.approxhpvmdemo.trace.TraceClassificationWork
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -64,7 +63,7 @@ class Adapter(private val data: List<String?>) :
 
         val runStart = data[position]
 
-        val date = HARClassificationLogger.dateTimeFormatter.parse(runStart)!!
+        val date = dateTimeFormatter.parse(runStart)!!
         holder.textView.text =
             DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM).format(date)
 
@@ -78,7 +77,8 @@ class Adapter(private val data: List<String?>) :
                 Data.Builder().apply {
                     putString(TraceClassificationWork.RUN_START, runStart)
                 }.build()
-            ).build()
+            )
+                .build()
 
             WorkManager.getInstance(ctx)
                 .enqueueUniqueWork("trace-$runStart", ExistingWorkPolicy.REPLACE, work)
