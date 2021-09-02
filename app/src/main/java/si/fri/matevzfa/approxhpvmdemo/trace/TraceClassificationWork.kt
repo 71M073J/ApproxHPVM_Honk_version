@@ -12,10 +12,7 @@ import dagger.assisted.AssistedInject
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.withIndex
-import si.fri.matevzfa.approxhpvmdemo.adaptation.HARConfidenceAdaptation
-import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
-import si.fri.matevzfa.approxhpvmdemo.adaptation.NoAdaptation
-import si.fri.matevzfa.approxhpvmdemo.adaptation.StateAdaptation
+import si.fri.matevzfa.approxhpvmdemo.adaptation.*
 import si.fri.matevzfa.approxhpvmdemo.data.Classification
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
 import si.fri.matevzfa.approxhpvmdemo.data.TraceClassification
@@ -42,7 +39,9 @@ class TraceClassificationWork @AssistedInject constructor(
         val traceRunStart = Instant.now()
 
         val noEngine = NoAdaptation(approxHPVMWrapper)
-        val engines = mutableListOf(
+        val engines = listOf(
+            NaiveAdaptation(approxHPVMWrapper, 1),
+            NaiveAdaptation(approxHPVMWrapper, 2),
             StateAdaptation(approxHPVMWrapper, 1),
             StateAdaptation(approxHPVMWrapper, 2),
             KalmanAdaptation(approxHPVMWrapper, 1),
