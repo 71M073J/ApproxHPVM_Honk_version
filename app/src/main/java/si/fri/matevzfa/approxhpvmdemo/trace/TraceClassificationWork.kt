@@ -49,11 +49,15 @@ class TraceClassificationWork @AssistedInject constructor(
             KalmanAdaptation(approxHPVMWrapper, 2),
             HARConfidenceAdaptation(
                 approxHPVMWrapper,
-                Configuration.loadConfigurations(applicationContext)
+                Configuration.loadConfigurations(applicationContext),
+                1,
+            ),
+            HARConfidenceAdaptation(
+                approxHPVMWrapper,
+                Configuration.loadConfigurations(applicationContext),
+                2,
             )
         )
-
-        return Result.success()
 
         val traceClassifications = mutableListOf<TraceClassification>()
 
