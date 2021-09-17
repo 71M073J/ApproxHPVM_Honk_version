@@ -12,7 +12,7 @@ import android.util.Log
 class HARSensorSampler(
     context: Context,
     handlerThread: HandlerThread,
-    val signalProcessor: HARSignalProcessor,
+    private val signalProcessor: HARSignalProcessor,
     private val callback: (FloatArray) -> Unit = {}
 ) : SensorEventListener {
 
