@@ -26,7 +26,7 @@ class DataImportWork @AssistedInject constructor(
     val approxHPVMWrapper: ApproxHPVMWrapper,
 ) : CoroutineWorker(context, workerParams) {
 
-    val signalProcessor = HARSignalProcessor()
+    private val signalProcessor = HARSignalProcessor(HARSignalProcessor.AxisOrder.DEFAULT)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
 

@@ -3,7 +3,26 @@ package si.fri.matevzfa.approxhpvmdemo.har
 import uk.me.berndporr.iirj.Butterworth
 import uk.me.berndporr.iirj.Cascade
 
-class HARSignalProcessor {
+/**
+ * An actor object that transforms raw signal data into signal images.
+ *
+ * @param axisMapping is used for reordering axes x,y,z
+ */
+class HARSignalProcessor(axisMapping: Map<Int, Int>) {
+
+    object AxisOrder {
+        val DEFAULT = mapOf(
+            0 to 0,
+            1 to 1,
+            2 to 2
+        )
+
+        val PORTRAIT_PHONE = mapOf(
+            0 to 1,
+            1 to 2,
+            2 to 0
+        )
+    }
 
     data class SensorData(
         val x: Float,
@@ -18,8 +37,8 @@ class HARSignalProcessor {
     val rate50Hz = 20_000
 
     /* Intermediate sensor data containers */
-    private val accelContainer = DataContainer(numReads, 3)
-    private val gyroContainer = DataContainer(numReads, 3)
+    private val accelContainer = DataContainer(numReads, 3, axisMapping)
+    private val gyroContainer = DataContainer(numReads, 3, axisMapping)
 
     /* Butterworth filters for filtering sensor signals */
     private val filterAccel20HzX = lowPass20Hz(rate50Hz)
@@ -125,7 +144,11 @@ class HARSignalProcessor {
      * It is used to read [numReads]  sensor readings with [numAxes] channels (e.g. x, y, z values of
      * gyroscope data).
      */
-    private class DataContainer(val numReads: Int, val numAxes: Int) {
+    private class DataContainer(
+        val numReads: Int,
+        val numAxes: Int,
+        val axisMapping: Map<Int, Int>,
+    ) {
 
         private var idx: Int = 0
         private var data = FloatArray(numReads * numAxes)
@@ -137,13 +160,8 @@ class HARSignalProcessor {
          * more than [numReads] values are added
          */
         fun push(v: FloatArray) {
-            val mapping = mapOf(
-                0 to 1,
-                1 to 2,
-                2 to 0
-            )
             for (i in 0 until numAxes) {
-                data[idx++] = v[mapping.getOrDefault(i, i)]
+                data[idx++] = v[axisMapping.getOrDefault(i, i)]
             }
         }
 

@@ -60,7 +60,7 @@ class HARService : Service(), TextToSpeech.OnInitListener {
         mSensorSampler = HARSensorSampler(
             this,
             mHandlerThreadSensors,
-            HARSignalProcessor(),
+            HARSignalProcessor(HARSignalProcessor.AxisOrder.PORTRAIT_PHONE),
             ::sensorSamplerCallback,
         )
 
