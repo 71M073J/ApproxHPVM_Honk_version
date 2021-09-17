@@ -15,7 +15,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import si.fri.matevzfa.approxhpvmdemo.R
 import si.fri.matevzfa.approxhpvmdemo.activityName
 import si.fri.matevzfa.approxhpvmdemo.adaptation.AdaptationEngine
-import si.fri.matevzfa.approxhpvmdemo.adaptation.KalmanAdaptation
 import si.fri.matevzfa.approxhpvmdemo.adaptation.StateAdaptation
 import si.fri.matevzfa.approxhpvmdemo.data.Classification
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao

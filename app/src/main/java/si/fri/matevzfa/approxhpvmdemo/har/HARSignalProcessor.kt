@@ -47,17 +47,21 @@ class HARSignalProcessor {
     fun needsAccData(): Boolean = !accelContainer.isFull()
 
     fun addAccData(accData: SensorData) {
-        if (needsAccData()) {
-            accelContainer.push(floatArrayOf(accData.x, accData.y, accData.z))
+        if (!needsAccData()) {
+            throw SamplingError("Accelerometer data is already sufficient")
         }
+
+        accelContainer.push(floatArrayOf(accData.x, accData.y, accData.z))
     }
 
     fun needsGyrData(): Boolean = !gyroContainer.isFull()
 
     fun addGyrData(gyrData: SensorData) {
-        if (needsGyrData()) {
-            gyroContainer.push(floatArrayOf(gyrData.x, gyrData.y, gyrData.z))
+        if (!needsGyrData()) {
+            throw SamplingError("Gyroscope data is already sufficient")
         }
+
+        gyroContainer.push(floatArrayOf(gyrData.x, gyrData.y, gyrData.z))
     }
 
     /**
