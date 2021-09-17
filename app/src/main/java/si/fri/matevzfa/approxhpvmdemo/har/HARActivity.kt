@@ -16,7 +16,7 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import si.fri.matevzfa.approxhpvmdemo.R
-import si.fri.matevzfa.approxhpvmdemo.TraceAdaptation
+import si.fri.matevzfa.approxhpvmdemo.trace.TraceAdaptation
 import si.fri.matevzfa.approxhpvmdemo.activityName
 import java.util.*
 

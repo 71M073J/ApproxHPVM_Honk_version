@@ -3,15 +3,10 @@ package si.fri.matevzfa.approxhpvmdemo.trace
 import android.content.Context
 import android.util.Log
 import androidx.hilt.work.HiltWorker
-import androidx.paging.*
 import androidx.work.CoroutineWorker
-import androidx.work.Worker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.withIndex
 import si.fri.matevzfa.approxhpvmdemo.adaptation.*
 import si.fri.matevzfa.approxhpvmdemo.data.Classification
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao

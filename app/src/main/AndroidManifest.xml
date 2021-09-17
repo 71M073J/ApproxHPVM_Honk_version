@@ -21,7 +21,7 @@
         android:theme="@style/Theme.ApproxHPVMDemo">
 
         <activity
-            android:name=".TraceAdaptation"
+            android:name=".trace.TraceAdaptation"
             android:parentActivityName=".har.HARActivity" />
 
         <service
