@@ -16,8 +16,9 @@ import androidx.appcompat.widget.SwitchCompat
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import dagger.hilt.android.AndroidEntryPoint
 import si.fri.matevzfa.approxhpvmdemo.R
-import si.fri.matevzfa.approxhpvmdemo.trace.TraceAdaptation
 import si.fri.matevzfa.approxhpvmdemo.activityName
+import si.fri.matevzfa.approxhpvmdemo.trace.DataImportActivity
+import si.fri.matevzfa.approxhpvmdemo.trace.TraceAdaptation
 import java.util.*
 
 @AndroidEntryPoint
@@ -74,6 +75,14 @@ class HARActivity : AppCompatActivity() {
         findViewById<Button>(R.id.bTraceClassify).apply {
             setOnClickListener {
                 startActivity(Intent(this@HARActivity, TraceAdaptation::class.java))
+            }
+        }
+
+        //
+        // Data import button
+        findViewById<Button>(R.id.bDataImport).apply {
+            setOnClickListener {
+                startActivity(Intent(this@HARActivity, DataImportActivity::class.java))
             }
         }
 

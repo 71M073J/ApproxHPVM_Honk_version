@@ -20,10 +20,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ApproxHPVMDemo">
 
-        <activity
-            android:name=".trace.TraceAdaptation"
-            android:parentActivityName=".har.HARActivity" />
-
         <service
             android:name=".har.HARService"
             android:enabled="true"
@@ -38,6 +34,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".trace.DataImportActivity"
+            android:parentActivityName=".har.HARActivity" />
+
+        <activity
+            android:name=".trace.TraceAdaptation"
+            android:parentActivityName=".har.HARActivity" />
 
         <provider
             android:name="androidx.work.impl.WorkManagerInitializer"
