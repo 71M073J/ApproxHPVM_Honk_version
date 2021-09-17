@@ -30,8 +30,6 @@ class DataImportWork @AssistedInject constructor(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
 
-        signalProcessor.reset()
-
         val filePath = "raw_labels.txt"
 
         val result = kotlin.runCatching {
@@ -48,59 +46,95 @@ class DataImportWork @AssistedInject constructor(
         // Skip header
         iter.next()
 
-        val userIdRunStartMap = mutableMapOf<Int, Instant>()
+        val collection = mutableListOf<Reading>()
 
         for (line in iter) {
-            //    0     1     2     3     4     5     6            7            8       9
-            // time acc_x acc_y acc_z ang_x ang_y ang_z activity_ind activity_des user_id
-            val values = line.split(" ")
+            val next = Reading.fromRecord(line)
 
-            val userId = values[9].toInt()
+            if (collection.isEmpty()) {
+                collection.add(next)
+                continue
+            }
 
-            val timestamp = Instant.ofEpochMilli((values[0].toFloat() * 1000).toLong())
-            val runStart = userIdRunStartMap.getOrPut(userId, { timestamp })
+            val current = collection.first()
 
-            val accData = HARSignalProcessor.SensorData(
-                values[1].toFloat(),
-                values[2].toFloat(),
-                values[3].toFloat()
-            )
-            signalProcessor.addAccData(accData)
+            if (current.user == next.user && (next.time.toEpochMilli() - current.time.toEpochMilli()) < 1000) {
+                collection.add(next)
+            } else {
+                // Save collected readings
+                store(collection)
 
-            val gyrData = HARSignalProcessor.SensorData(
-                values[4].toFloat(),
-                values[5].toFloat(),
-                values[6].toFloat()
-            )
-            signalProcessor.addGyrData(gyrData)
+                // Reset collectio
+                collection.clear()
 
-            if (signalProcessor.isFull()) {
-                processSignalImage(runStart, timestamp)
-                signalProcessor.reset()
+                // Reinitialize a new series
+                collection.add(next)
             }
         }
 
         return@withContext Result.success()
     }
 
-    private fun processSignalImage(runStart: Instant, timestamp: Instant) {
-        val signalImage = signalProcessor.signalImage()
+    private fun store(readings: List<Reading>) {
+        signalProcessor.reset()
 
-        Classification(
-            uid = 0,
-            timestamp = dateTimeFormatter.format(timestamp)!!,
-            runStart = dateTimeFormatter.format(runStart)!!,
-            usedConfig = null,
-            argMax = null,
-            argMaxBaseline = null,
-            confidenceConcat = null,
-            confidenceBaselineConcat = null,
-            signalImage = signalImage.joinToString(","),
-            usedEngine = null,
-        ).also {
-            classificationDao.insertAll(it)
+        val sortedReadings = readings.sortedBy { it.time }
+        val runStart = sortedReadings.first().time
+
+        for (reading in sortedReadings) {
+            val accData = HARSignalProcessor.SensorData(reading.accX, reading.accY, reading.accZ)
+            val gyrData = HARSignalProcessor.SensorData(reading.gyrX, reading.gyrY, reading.gyrZ)
+
+            signalProcessor.addAccData(accData)
+            signalProcessor.addGyrData(gyrData)
+
+            if (signalProcessor.isFull()) {
+
+                val signalImage = signalProcessor.signalImage()
+
+                val classification = Classification(
+                    uid = 0,
+                    timestamp = dateTimeFormatter.format(reading.time)!!,
+                    runStart = dateTimeFormatter.format(runStart)!!,
+                    usedConfig = null,
+                    argMax = null,
+                    argMaxBaseline = null,
+                    confidenceConcat = null,
+                    confidenceBaselineConcat = null,
+                    signalImage = signalImage.joinToString(","),
+                    usedEngine = null,
+                )
+
+                classificationDao.insertAll(classification)
+
+                signalProcessor.reset()
+            }
         }
+    }
 
+    private data class Reading(
+        val time: Instant,
+        val accX: Float, val accY: Float, val accZ: Float,
+        val gyrX: Float, val gyrY: Float, val gyrZ: Float,
+        val user: Int,
+    ) {
+        companion object {
+            fun fromRecord(record: String): Reading {
+                //    0     1     2     3     4     5     6            7            8       9
+                // time acc_x acc_y acc_z ang_x ang_y ang_z activity_ind activity_des user_id
+                val values = record.split(" ")
+
+                val timestamp = Instant.ofEpochMilli((values[0].toFloat() * 1000).toLong())!!
+                val userId = values[9].toInt()
+
+                return Reading(
+                    timestamp,
+                    values[1].toFloat(), values[2].toFloat(), values[3].toFloat(),
+                    values[4].toFloat(), values[5].toFloat(), values[6].toFloat(),
+                    userId,
+                )
+            }
+        }
     }
 
     companion object {
