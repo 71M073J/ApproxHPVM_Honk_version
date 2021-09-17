@@ -6,6 +6,8 @@
     <string name="buttonTraceClassify">Trace classification</string>
     <string name="buttonDataImport">Import Raw Data</string>
     <string name="traces_info">Choose which trace to run adaptable AMC on.</string>
-    <string name="buttonSelectFile">Select File</string>
-    <string name="import_a_csv_file_of_raw_data">Import a CSV file of raw data.</string>
+    <string name="buttonSelectFile">Import</string>
+    <string name="import_a_csv_file_of_raw_data">
+        Tapping the button below will load a csv from application\'s assets into internal database.
+    </string>
 </resources>
