@@ -28,6 +28,7 @@ class DataImportActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.bSelectFile).apply {
             setOnClickListener {
+
                 val work = OneTimeWorkRequestBuilder<DataImportWork>().addTag(TAG).build()
 
                 WorkManager.getInstance(context)
