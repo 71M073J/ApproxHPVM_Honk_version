@@ -1,12 +1,19 @@
 package si.fri.matevzfa.approxhpvmdemo.trace
 
+import android.annotation.SuppressLint
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import si.fri.matevzfa.approxhpvmdemo.R
 import si.fri.matevzfa.approxhpvmdemo.adaptation.*
 import si.fri.matevzfa.approxhpvmdemo.data.Classification
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
@@ -30,6 +37,8 @@ class TraceClassificationWork @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val classifications = classificationDao.loadAllByRunStart(forRunStart)
+
+        showNotification("Trace classification started", "You will be notified when it completes.")
 
         val traceRunStart = Instant.now()
 
@@ -89,8 +98,35 @@ class TraceClassificationWork @AssistedInject constructor(
             }
         }
 
+        showNotification(
+            "Trace classification completed",
+            "Classification for $forRunStart completed."
+        )
 
         return Result.success()
+    }
+
+    @SuppressLint("ObsoleteSdkInt")
+    private fun showNotification(title: String, content: String) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "Trace Classification Completion"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel(CHANNEL_ID, name, importance)
+            // Register the channel with the system
+            val notificationManager: NotificationManager =
+                applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_baseline_info_24)
+            .setContentTitle(title)
+            .setContentText(content)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+        with(NotificationManagerCompat.from(applicationContext)) {
+            notify(COMPLETED_ID, builder.build())
+        }
     }
 
     private fun classify(signalImage: FloatArray): Pair<FloatArray, Int> {
@@ -102,6 +138,8 @@ class TraceClassificationWork @AssistedInject constructor(
 
     companion object {
         const val TAG = "TraceClassificationWork"
+        const val CHANNEL_ID = "TraceClassificationWork"
+        const val COMPLETED_ID = 5050123
 
         const val RUN_START = "RUN_START"
     }
