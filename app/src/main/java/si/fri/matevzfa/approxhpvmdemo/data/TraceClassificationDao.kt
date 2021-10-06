@@ -14,6 +14,9 @@ interface TraceClassificationDao {
     @Query("SELECT * FROM trace_classification WHERE run_start = :runStart ORDER BY timestamp ASC")
     fun loadAllByRunStart(runStart: String?): DataSource.Factory<Int, TraceClassification>
 
+    @Query("DELETE FROM trace_classification WHERE run_start = :runStart")
+    fun deleteAllByRunStart(runStart: String)
+
     @Query("SELECT DISTINCT run_start FROM trace_classification ORDER BY timestamp ASC")
     fun getRunStarts(): List<String>
 

@@ -1,11 +1,13 @@
 package si.fri.matevzfa.approxhpvmdemo.trace
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
@@ -17,6 +19,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import si.fri.matevzfa.approxhpvmdemo.R
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationInfo
+import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
 import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -27,6 +30,9 @@ class TraceAdaptation : AppCompatActivity() {
 
     @Inject
     lateinit var classificationDao: ClassificationDao
+
+    @Inject
+    lateinit var traceClassificationDao: TraceClassificationDao
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,16 +46,19 @@ class TraceAdaptation : AppCompatActivity() {
             Log.i(TAG, "$d")
         }
 
-        val adapter = Adapter(data)
+        val adapter = Adapter(data, traceClassificationDao)
 
         val recycler = findViewById<RecyclerView>(R.id.trace_list)
         recycler.adapter = adapter
     }
 
-    private class Adapter(private val data: List<ClassificationInfo>) :
+    private class Adapter(
+        private val data: List<ClassificationInfo>,
+        private val traceClassificationDao: TraceClassificationDao
+    ) :
         RecyclerView.Adapter<Adapter.ViewHolder>() {
 
-        class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
             val cardView: CardView = view.findViewById(R.id.card)
             val textView: TextView = cardView.findViewById(R.id.text)
         }
@@ -61,6 +70,7 @@ class TraceAdaptation : AppCompatActivity() {
             return ViewHolder(view)
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val ctx = holder.cardView.context
 
@@ -75,8 +85,9 @@ class TraceAdaptation : AppCompatActivity() {
                     ).format(date)
                 }"""
 
-            if (!data[position].wasClassified) {
-                holder.cardView.setOnClickListener {
+
+            holder.cardView.setOnClickListener {
+                if (!data[position].wasClassified) {
                     Log.d(
                         "CardView",
                         "Clicked on $runStart"
@@ -92,6 +103,13 @@ class TraceAdaptation : AppCompatActivity() {
 
                     WorkManager.getInstance(ctx)
                         .enqueueUniqueWork("trace-$runStart", ExistingWorkPolicy.REPLACE, work)
+                } else {
+                    traceClassificationDao.deleteAllByRunStart(runStart)
+                    Toast.makeText(
+                        holder.view.context,
+                        "Deleted all for runStart $runStart",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
 
