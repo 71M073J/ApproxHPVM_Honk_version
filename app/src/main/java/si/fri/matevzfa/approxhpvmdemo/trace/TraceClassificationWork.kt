@@ -53,7 +53,6 @@ class TraceClassificationWork @AssistedInject constructor(
             )
         )
 
-        val traceClassifications = mutableListOf<TraceClassification>()
 
         for ((i, c: Classification) in classifications.withIndex()) {
             c.signalImage ?: continue
@@ -86,11 +85,10 @@ class TraceClassificationWork @AssistedInject constructor(
                     info = c.info,
                 )
 
-                traceClassifications.add(tc)
+                traceClassificationDao.insertAll(tc)
             }
         }
 
-        traceClassificationDao.insertAll(*traceClassifications.toTypedArray())
 
         return Result.success()
     }
