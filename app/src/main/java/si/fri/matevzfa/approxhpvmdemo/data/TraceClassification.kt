@@ -16,7 +16,8 @@ data class TraceClassification(
     @ColumnInfo(name = "confidence_concat") val confidenceConcat: String?,
     @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
     @ColumnInfo(name = "used_engine") val usedEngine: String?,
+    @ColumnInfo(name = "info") val info: String = "",
 ) {
     override fun toString(): String =
-        "TraceClassification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax)"
+        "TraceClassification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax, info=$info)"
 }

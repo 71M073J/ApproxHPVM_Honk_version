@@ -63,7 +63,10 @@ class TraceClassificationWork @AssistedInject constructor(
             val (softMaxBaseline, argMaxBaseline) = noEngine.useFor { classify(signalImage) }
 
             for (engine in engines) {
-                Log.i(TAG, "Classifying input $i with ${engine.name()}")
+                Log.i(
+                    TAG,
+                    "Classifying input ${i + 1}/${classifications.size} with ${engine.name()}"
+                )
 
                 val usedConfig = engine.configuration()
                 val (softMax, argMax) = engine.useFor { classify(signalImage) }
@@ -80,6 +83,7 @@ class TraceClassificationWork @AssistedInject constructor(
                     argMaxBaseline = argMaxBaseline,
                     confidenceBaselineConcat = softMaxBaseline.joinToString(","),
                     usedEngine = engine.name(),
+                    info = c.info,
                 )
 
                 traceClassifications.add(tc)

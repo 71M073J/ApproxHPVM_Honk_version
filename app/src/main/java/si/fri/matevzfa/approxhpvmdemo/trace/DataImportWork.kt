@@ -9,13 +9,14 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import si.fri.matevzfa.approxhpvmdemo.data.Classification
 import si.fri.matevzfa.approxhpvmdemo.data.ClassificationDao
 import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
-import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
 import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import si.fri.matevzfa.approxhpvmdemo.har.HARSignalProcessor
-import java.time.Instant
+import java.util.stream.Collectors
 
 @HiltWorker
 class DataImportWork @AssistedInject constructor(
@@ -34,6 +35,7 @@ class DataImportWork @AssistedInject constructor(
 
         val result = kotlin.runCatching {
             applicationContext.assets.open(filePath).bufferedReader().lines()
+                .collect(Collectors.toList())!!
         }
 
         if (result.isFailure) {
@@ -41,61 +43,56 @@ class DataImportWork @AssistedInject constructor(
             return@withContext Result.failure()
         }
 
-        val iter = result.getOrNull()!!.iterator()
+        val readingsByUser = result.getOrNull()!!
+            .drop(1)
+            .map { line -> Reading.fromRecord(line) }
+            .groupBy { it.user }
+            .mapValues { it.value.sortedBy { it.time } }
 
-        // Skip header
-        iter.next()
+        for ((user, readings) in readingsByUser) {
 
-        val collection = mutableListOf<Reading>()
+            val runStart = readings.first().time
 
-        for (line in iter) {
-            val next = Reading.fromRecord(line)
+            for (chunk in readings.chunked(128)) {
+                if (chunk.size < 128) {
+                    continue
+                }
 
-            if (collection.isEmpty()) {
-                collection.add(next)
-                continue
-            }
+                if (!chunk.all { it.groudTruth == chunk.first().groudTruth }) {
+                    continue
+                }
 
-            val current = collection.first()
+                signalProcessor.reset()
 
-            if (current.user == next.user && (next.time.toEpochMilli() - current.time.toEpochMilli()) < 1000) {
-                collection.add(next)
-            } else {
-                // Save collected readings
-                store(collection)
+                for (reading in chunk) {
+                    signalProcessor.addAccData(
+                        HARSignalProcessor.SensorData(
+                            reading.accX,
+                            reading.accY,
+                            reading.accZ
+                        )
+                    )
+                    signalProcessor.addGyrData(
+                        HARSignalProcessor.SensorData(
+                            reading.gyrX,
+                            reading.gyrY,
+                            reading.gyrZ
+                        )
+                    )
+                }
 
-                // Reset collectio
-                collection.clear()
+                val timestamp = chunk.last().time
+                val baseline = chunk.last().groudTruth
 
-                // Reinitialize a new series
-                collection.add(next)
-            }
-        }
-
-        return@withContext Result.success()
-    }
-
-    private fun store(readings: List<Reading>) {
-        signalProcessor.reset()
-
-        val sortedReadings = readings.sortedBy { it.time }
-        val runStart = sortedReadings.first().time
-
-        for (reading in sortedReadings) {
-            val accData = HARSignalProcessor.SensorData(reading.accX, reading.accY, reading.accZ)
-            val gyrData = HARSignalProcessor.SensorData(reading.gyrX, reading.gyrY, reading.gyrZ)
-
-            signalProcessor.addAccData(accData)
-            signalProcessor.addGyrData(gyrData)
-
-            if (signalProcessor.isFull()) {
+                if (!signalProcessor.isFull()) {
+                    throw RuntimeException("signalProcessor was not filled")
+                }
 
                 val signalImage = signalProcessor.signalImage()
-
                 val classification = Classification(
                     uid = 0,
-                    timestamp = dateTimeFormatter.format(reading.time)!!,
-                    runStart = dateTimeFormatter.format(runStart)!!,
+                    timestamp = timestamp.toString(),
+                    runStart = runStart.toString(),
                     usedConfig = null,
                     argMax = null,
                     argMaxBaseline = null,
@@ -103,13 +100,21 @@ class DataImportWork @AssistedInject constructor(
                     confidenceBaselineConcat = null,
                     signalImage = signalImage.joinToString(","),
                     usedEngine = null,
+                    info = "user=$user baseline=$baseline"
+                )
+
+                Log.i(
+                    TAG,
+                    "Inserting user $user timestamp $timestamp ${chunk.last().time.toEpochMilliseconds() - chunk.first().time.toEpochMilliseconds()}"
                 )
 
                 classificationDao.insertAll(classification)
-
-                signalProcessor.reset()
             }
         }
+
+        val a: Instant = Clock.System.now()
+
+        return@withContext Result.success()
     }
 
     private data class Reading(
@@ -117,6 +122,7 @@ class DataImportWork @AssistedInject constructor(
         val accX: Float, val accY: Float, val accZ: Float,
         val gyrX: Float, val gyrY: Float, val gyrZ: Float,
         val user: Int,
+        val groudTruth: Int,
     ) {
         companion object {
             fun fromRecord(record: String): Reading {
@@ -124,7 +130,8 @@ class DataImportWork @AssistedInject constructor(
                 // time acc_x acc_y acc_z ang_x ang_y ang_z activity_ind activity_des user_id
                 val values = record.split(" ")
 
-                val timestamp = Instant.ofEpochMilli((values[0].toFloat() * 1000).toLong())!!
+                val timestamp =
+                    Instant.fromEpochMilliseconds((values[0].toDouble() * 1000).toLong())
                 val userId = values[9].toInt()
 
                 return Reading(
@@ -132,6 +139,7 @@ class DataImportWork @AssistedInject constructor(
                     values[1].toFloat(), values[2].toFloat(), values[3].toFloat(),
                     values[4].toFloat(), values[5].toFloat(), values[6].toFloat(),
                     userId,
+                    values[7].toInt()
                 )
             }
         }

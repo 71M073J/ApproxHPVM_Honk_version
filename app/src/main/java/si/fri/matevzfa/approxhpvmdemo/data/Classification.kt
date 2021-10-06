@@ -16,7 +16,8 @@ data class Classification(
     @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
     @ColumnInfo(name = "signal_image") val signalImage: String?,
     @ColumnInfo(name = "used_engine") val usedEngine: String?,
+    @ColumnInfo(name = "info") val info: String = "",
 ) {
     override fun toString(): String =
-        "Classification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax)"
+        "Classification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax, info=$info)"
 }
