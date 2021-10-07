@@ -17,6 +17,9 @@ interface TraceClassificationDao {
     @Query("DELETE FROM trace_classification WHERE run_start = :runStart")
     fun deleteAllByRunStart(runStart: String)
 
+    @Query("DELETE FROM trace_classification WHERE trace_run_start = :traceRunStart")
+    fun deleteAllByTraceRunStart(traceRunStart: String)
+
     @Query("SELECT DISTINCT run_start FROM trace_classification ORDER BY timestamp ASC")
     fun getRunStarts(): List<String>
 

@@ -20,7 +20,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingLeft="4dp"
+                android:padding="4dp"
                 android:text="@string/traces_info" />
 
             <LinearLayout
@@ -52,7 +52,9 @@
         </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
+            android:background="#dddddd"
             android:id="@+id/trace_list"
+            android:paddingTop="4dp"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />

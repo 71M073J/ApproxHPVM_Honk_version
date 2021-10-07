@@ -40,7 +40,7 @@ class TraceClassificationWork @AssistedInject constructor(
 
         showNotification("Trace classification started", "You will be notified when it completes.")
 
-        val traceRunStart = Instant.now()
+        val traceRunStart = dateTimeFormatter.format(Instant.now())
 
         val noEngine = NoAdaptation(approxHPVMWrapper)
         val engines = listOf(
@@ -77,7 +77,11 @@ class TraceClassificationWork @AssistedInject constructor(
                 )
 
                 if (isStopped) {
-                    traceClassificationDao.deleteAllByRunStart(forRunStart!!)
+                    traceClassificationDao.deleteAllByTraceRunStart(traceRunStart!!)
+                    showNotification(
+                        "Trace classification cancelled",
+                        "Trace classification for $forRunStart was cancelled."
+                    )
                     return Result.success()
                 }
 
@@ -89,7 +93,7 @@ class TraceClassificationWork @AssistedInject constructor(
                     uid = 0,
                     timestamp = c.timestamp,
                     runStart = c.runStart,
-                    traceRunStart = dateTimeFormatter.format(traceRunStart),
+                    traceRunStart = traceRunStart,
                     usedConfig = usedConfig,
                     argMax = argMax,
                     confidenceConcat = softMax.joinToString(","),
