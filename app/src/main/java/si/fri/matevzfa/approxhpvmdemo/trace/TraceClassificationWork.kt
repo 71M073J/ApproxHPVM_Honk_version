@@ -76,6 +76,11 @@ class TraceClassificationWork @AssistedInject constructor(
                     "Classifying input ${i + 1}/${classifications.size} with ${engine.name()}"
                 )
 
+                if (isStopped) {
+                    traceClassificationDao.deleteAllByRunStart(forRunStart!!)
+                    return Result.success()
+                }
+
                 val usedConfig = engine.configuration()
                 val (softMax, argMax) = engine.useFor { classify(signalImage) }
                 engine.actUpon(softMax, argMax)

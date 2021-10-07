@@ -45,6 +45,33 @@ class TraceAdaptation : AppCompatActivity() {
 
         val recycler = findViewById<RecyclerView>(R.id.trace_list)
         recycler.adapter = adapter
+
+        markFinished()
+
+        // Listen for work
+        WorkManager.getInstance(this)
+            .getWorkInfosForUniqueWorkLiveData(UNIQUE_WORK_NAME)
+            .observe(this) { workInfos ->
+                for (info in workInfos) {
+                    if (info.state.isFinished) {
+                        markFinished()
+                    } else {
+                        markRunning()
+                    }
+                }
+            }
+
+        findViewById<View>(R.id.traceProgressButton).setOnClickListener {
+            WorkManager.getInstance(this).cancelUniqueWork(UNIQUE_WORK_NAME)
+        }
+    }
+
+    private fun markFinished() {
+        findViewById<View>(R.id.traceProgress).visibility = View.INVISIBLE
+    }
+
+    private fun markRunning() {
+        findViewById<View>(R.id.traceProgress).visibility = View.VISIBLE
     }
 
     private class Adapter(
@@ -106,7 +133,7 @@ class TraceAdaptation : AppCompatActivity() {
                         .build()
 
                     WorkManager.getInstance(ctx)
-                        .enqueueUniqueWork("trace-adaptation", ExistingWorkPolicy.KEEP, work)
+                        .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
                 } else {
 
                     AlertDialog.Builder(holder.view.context)
@@ -135,5 +162,7 @@ class TraceAdaptation : AppCompatActivity() {
 
     companion object {
         const val TAG = "TraceAdaptation"
+
+        const val UNIQUE_WORK_NAME = "trace-adaptation"
     }
 }
