@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
@@ -40,23 +41,26 @@ class TraceAdaptation : AppCompatActivity() {
 
         supportActionBar?.title = "Trace classification"
 
-        val data = classificationDao.getRunStartsWithClassifiedFlag()
-
-        for (d in data) {
-            Log.i(TAG, "$d")
-        }
-
-        val adapter = Adapter(data, traceClassificationDao)
+        val adapter = Adapter(classificationDao, traceClassificationDao)
 
         val recycler = findViewById<RecyclerView>(R.id.trace_list)
         recycler.adapter = adapter
     }
 
     private class Adapter(
-        private val data: List<ClassificationInfo>,
+        private val classificationDao: ClassificationDao,
         private val traceClassificationDao: TraceClassificationDao
-    ) :
-        RecyclerView.Adapter<Adapter.ViewHolder>() {
+    ) : RecyclerView.Adapter<Adapter.ViewHolder>() {
+
+        lateinit var data: List<ClassificationInfo>
+
+        init {
+            loadData()
+        }
+
+        fun loadData() {
+            data = classificationDao.getRunStartsWithClassifiedFlag()
+        }
 
         class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
             val cardView: CardView = view.findViewById(R.id.card)
@@ -102,18 +106,28 @@ class TraceAdaptation : AppCompatActivity() {
                         .build()
 
                     WorkManager.getInstance(ctx)
-                        .enqueueUniqueWork("trace-$runStart", ExistingWorkPolicy.REPLACE, work)
+                        .enqueueUniqueWork("trace-adaptation", ExistingWorkPolicy.KEEP, work)
                 } else {
-                    traceClassificationDao.deleteAllByRunStart(runStart)
-                    Toast.makeText(
-                        holder.view.context,
-                        "Deleted all for runStart $runStart",
-                        Toast.LENGTH_SHORT
-                    ).show()
+
+                    AlertDialog.Builder(holder.view.context)
+                        .setTitle("Confirmation")
+                        .setMessage("Delete trace with runStart $runStart?")
+                        .setPositiveButton("Yes") { dialog, id ->
+                            traceClassificationDao.deleteAllByRunStart(runStart)
+                            Toast.makeText(
+                                holder.view.context,
+                                "Deleted all for runStart $runStart",
+                                Toast.LENGTH_SHORT
+                            ).show()
+
+                            loadData()
+                            notifyItemChanged(position)
+                        }
+                        .setNegativeButton("No", null)
+                        .create()
+                        .show()
                 }
             }
-
-            holder.cardView.isClickable = !data[position].wasClassified
         }
 
         override fun getItemCount(): Int = data.size
