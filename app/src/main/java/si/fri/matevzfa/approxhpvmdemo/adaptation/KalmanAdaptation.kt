@@ -20,7 +20,7 @@ class KalmanAdaptation(approxHPVMWrapper: ApproxHPVMWrapper, val factor: Int = 2
         val equalAsLast = if (lastArgMax == -1 || argMax == lastArgMax) 1 else 0
 
         val newState = currentState + kalmanGain * (equalAsLast - currentState)
-        val newUncertainty = currentUncertainty + processNoise
+        val newUncertainty = (1 - kalmanGain) * currentUncertainty
 
         if (newState < 0.5) {
             approximateLess()
@@ -31,7 +31,7 @@ class KalmanAdaptation(approxHPVMWrapper: ApproxHPVMWrapper, val factor: Int = 2
         lastArgMax = argMax
 
         currentState = newState
-        currentUncertainty = newUncertainty
+        currentUncertainty = newUncertainty + processNoise
     }
 
     private fun approximateLess() {
