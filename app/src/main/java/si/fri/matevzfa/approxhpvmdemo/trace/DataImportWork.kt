@@ -18,6 +18,7 @@ import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import si.fri.matevzfa.approxhpvmdemo.har.HARSignalProcessor
 import java.util.stream.Collectors
 
+
 @HiltWorker
 class DataImportWork @AssistedInject constructor(
     @Assisted context: Context,
@@ -30,12 +31,84 @@ class DataImportWork @AssistedInject constructor(
     private val signalProcessor = HARSignalProcessor(HARSignalProcessor.AxisOrder.DEFAULT)
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        val binfilePath = "tune_input.bin"
+        val result = kotlin.runCatching {
+            applicationContext.assets.open(binfilePath)//.bufferedReader().lines()
+            //.collect(Collectors.toList())!!
+        }
 
+        if (result.isFailure) {
+            Log.e(TAG, "An error occurred", result.exceptionOrNull())
+            return@withContext Result.failure()
+        }
+        //val file = applicationContext.assets.open(binfilePath)
+        val file = result.getOrNull()!!
+        var bytes : ByteArray = file.readBytes()
+
+        var vals = IntArray(bytes.size / 4)
+        for(i in bytes.indices){
+            vals[i/4] = vals[i/4] or ((bytes[i].toInt() and 0x000000FF) shl ((i % 4)) * 8)
+        }
+        bytes = ByteArray(0)
+        val binfilePathLabels = "tune_labels.bin"
+        val resultLabels = kotlin.runCatching {
+            applicationContext.assets.open(binfilePathLabels)//.bufferedReader().lines()
+            //.collect(Collectors.toList())!!
+        }
+        if (resultLabels.isFailure) {
+            Log.e(TAG, "An error occurred", result.exceptionOrNull())
+            return@withContext Result.failure()
+        }
+        //val file = applicationContext.assets.open(binfilePath)
+        val fileLabels = resultLabels.getOrNull()!!
+        var bytesLabels : ByteArray = fileLabels.readBytes()
+        var valsLabels = IntArray(bytesLabels.size / 4)
+        for(i in bytesLabels.indices){
+            valsLabels[i/4] = valsLabels[i/4] or ((bytesLabels[i].toInt() and 0x000000FF) shl ((i % 4)) * 8)
+        }
+        bytesLabels = ByteArray(0)
+
+        var vals2 = FloatArray(vals.size)
+        for(i in vals.indices){
+            vals2[i] = java.lang.Float.intBitsToFloat(vals[i])
+        }
+        vals = IntArray(0)
+        //VALS2 PRAVILNO PARSA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        Log.i("asda", vals2[0].toString() + ", " + vals2[1].toString() +", "+ vals2[2].toString()  + ", "+ vals2.size)
+        var signalImage : FloatArray
+        val runStart = Clock.System.now()
+        val numImages = (vals2.size / (101 * 40)).toInt()
+        for (i in 0 until 1000){
+            signalImage = FloatArray(101 * 40)
+            for (j in 0 until (101 * 40)){
+                signalImage[j] = vals2[i * (40 * 101) + j]
+            }
+            val classification = Classification(
+                uid = 0,
+                timestamp = Clock.System.now().toString(),
+                runStart = runStart.toString(),
+                usedConfig = null,
+                argMax = null,
+                argMaxBaseline = null,
+                confidenceConcat = null,
+                confidenceBaselineConcat = null,
+                signalImage = signalImage.joinToString(","),
+                usedEngine = null,
+                info = "baseline: ${valsLabels[i]}"
+            )
+            Log.i(
+                    TAG,
+            "Inserting next command $i, with label ${valsLabels[i]}"
+            )
+            classificationDao.insertAll(classification)
+        }
+        vals2 = FloatArray(0)
+/*
         val filePath = "raw_labels.txt"
 
         val result = kotlin.runCatching {
-            applicationContext.assets.open(filePath).bufferedReader().lines()
-                .collect(Collectors.toList())!!
+            applicationContext.assets.open(filePath)//.bufferedReader().lines()
+                //.collect(Collectors.toList())!!
         }
 
         if (result.isFailure) {
@@ -111,6 +184,7 @@ class DataImportWork @AssistedInject constructor(
                 classificationDao.insertAll(classification)
             }
         }
+*/
 
         val a: Instant = Clock.System.now()
 

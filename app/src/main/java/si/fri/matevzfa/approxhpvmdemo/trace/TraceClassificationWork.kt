@@ -50,7 +50,7 @@ class TraceClassificationWork @AssistedInject constructor(
             StateAdaptation(approxHPVMWrapper, 2),
             KalmanAdaptation(approxHPVMWrapper, 1),
             KalmanAdaptation(approxHPVMWrapper, 2),
-            HARConfidenceAdaptation(
+            /*HARConfidenceAdaptation(
                 approxHPVMWrapper,
                 Configuration.loadConfigurations(applicationContext),
                 1,
@@ -59,7 +59,7 @@ class TraceClassificationWork @AssistedInject constructor(
                 approxHPVMWrapper,
                 Configuration.loadConfigurations(applicationContext),
                 2,
-            )
+            )*/
         )
 
 
@@ -139,7 +139,7 @@ class TraceClassificationWork @AssistedInject constructor(
     }
 
     private fun classify(signalImage: FloatArray): Pair<FloatArray, Int> {
-        val softMax = FloatArray(6)
+        val softMax = FloatArray(12)
         approxHPVMWrapper.hpvmInference(signalImage, softMax)
         val argMax = softMax.indices.maxByOrNull { softMax[it] } ?: -1
         return Pair(softMax, argMax)

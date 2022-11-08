@@ -8,7 +8,7 @@ class HARClassifier(
     handlerThread: HandlerThread,
     val callback: (FloatArray) -> Unit = {}
 ) {
-    private val numClasses = 6
+    private val numClasses = 12
     private val handler = Handler(handlerThread.looper)
 
     fun classify(signalImage: FloatArray) {
@@ -25,7 +25,7 @@ class HARClassifierWithBaseline(
     handlerThread: HandlerThread,
     val callback: (FloatArray, FloatArray, FloatArray) -> Unit = { softMax, softMaxBasline, signalImage -> }
 ) {
-    private val numClasses = 6
+    private val numClasses = 12
     private val handler = Handler(handlerThread.looper)
 
     fun classify(signalImage: FloatArray) {

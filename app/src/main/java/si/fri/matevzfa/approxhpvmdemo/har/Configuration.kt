@@ -19,7 +19,7 @@ data class Configuration(
         private const val TAG = "Configuration"
 
         fun loadConfigurations(ctx: Context): List<Configuration> =
-            ctx.assets.open("models/mobilenet_uci-har/confs.txt").reader()
+            ctx.assets.open("models/honk/confs.txt").reader()
                 .readLines()
                 .filter { it.startsWith("conf") }
                 .map { it.split(" ") }
