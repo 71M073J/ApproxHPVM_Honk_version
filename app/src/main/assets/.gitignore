@@ -1,6 +1,5 @@
-*
-!models
-!global_knobs.txt
-!.gitignore
-
-
+raw_labels.txt
+test_labels.bin
+test_input.bin
+tune_labels.bin
+tune_input.bin
