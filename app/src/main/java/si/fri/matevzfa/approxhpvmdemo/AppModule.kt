@@ -28,6 +28,12 @@ object AppModule {
 
     @Singleton
     @Provides
+    fun provideSignalImageDao(
+        db: AppDatabase
+    ) = db.signalImageDao()
+
+    @Singleton
+    @Provides
     fun provideClassificationDao(
         db: AppDatabase
     ) = db.classificationDao()

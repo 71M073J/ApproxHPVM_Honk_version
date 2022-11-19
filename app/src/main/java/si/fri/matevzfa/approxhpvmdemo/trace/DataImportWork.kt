@@ -29,7 +29,7 @@ class DataImportWork @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     private val signalProcessor = HARSignalProcessor(HARSignalProcessor.AxisOrder.DEFAULT)
-
+    private val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val binfilePath = "tune_input.bin"
         val result = kotlin.runCatching {
@@ -78,10 +78,10 @@ class DataImportWork @AssistedInject constructor(
         var signalImage : FloatArray
         val runStart = Clock.System.now()
         val numImages = (vals2.size / (101 * 40)).toInt()
-        for (i in 0 until 1000){
+        for (i in 0 until 100){
             signalImage = FloatArray(101 * 40)
             for (j in 0 until (101 * 40)){
-                signalImage[j] = vals2[i * (40 * 101) + j]
+                signalImage[j] = vals2[i * (40 * 101) + j]//TODO REDO the reverse indexing for image
             }
             val classification = Classification(
                 uid = 0,
@@ -94,11 +94,11 @@ class DataImportWork @AssistedInject constructor(
                 confidenceBaselineConcat = null,
                 signalImage = signalImage.joinToString(","),
                 usedEngine = null,
-                info = "baseline: ${valsLabels[i]}"
+                info = "baseline: ${valsLabels[i]} (${labelNames[valsLabels[i]]})"
             )
             Log.i(
                     TAG,
-            "Inserting next command $i, with label ${valsLabels[i]}"
+            "Inserting next command $i, with label ${valsLabels[i]}(${labelNames[valsLabels[i]]})"
             )
             classificationDao.insertAll(classification)
         }

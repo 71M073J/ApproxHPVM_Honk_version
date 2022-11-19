@@ -10,4 +10,8 @@
     <string name="import_a_csv_file_of_raw_data">
         Tapping the button below will load a csv from application\'s assets into internal database.
     </string>
+    <string name="main_button_mobiprox">Mobiprox Activities</string>
+    <string name="main_button_arp">ARP Activities</string>
+    <string name="button_helper">Decide which app to use</string>
+    <string name="stop_listening_button">Stop Listening</string>
 </resources>

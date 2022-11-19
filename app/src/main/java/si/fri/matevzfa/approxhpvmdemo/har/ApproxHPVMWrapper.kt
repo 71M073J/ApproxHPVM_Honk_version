@@ -24,7 +24,6 @@ class ApproxHPVMWrapper(context: Context)  {
 
     fun init() {
         Log.i(TAG, "Initializing ApproxHPVMWrapper")
-
         hpvmInit(assetManager)
     }
 

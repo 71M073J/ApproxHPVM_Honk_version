@@ -42,6 +42,11 @@ android {
             jniDebuggable = true
         }
     }
+    configurations {
+        all{
+            exclude group: "org.apache.commons.math3", module: "jetified-commons-math3-3.6.1"
+        }
+    }
     externalNativeBuild {
         cmake {
             path "src/main/cpp/CMakeLists.txt"
@@ -89,8 +94,12 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.3.0")
 
+    //implementation files("librosa/jlibrosa-1.1.8-SNAPSHOT-jar-with-dependencies.jar")
+    implementation files("librosa/librosa2.jar")
 
-}
+
+
+} //implementation 'com.github.User:Repo:Tag'
 
 kapt {
     correctErrorTypes true

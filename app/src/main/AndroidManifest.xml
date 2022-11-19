@@ -28,14 +28,28 @@
 
         <activity
             android:name=".har.HARActivity"
-            android:exported="true">
+            android:exported="true"
+            android:parentActivityName=".arp.MainActivity">
+            <!--
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            -->
         </activity>
+        <activity
+        android:name=".arp.MainActivity"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
 
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+    </activity>
+        <activity
+            android:name=".arp.ARPActivity"
+            android:parentActivityName=".arp.MainActivity" />
         <activity
             android:name=".trace.DataImportActivity"
             android:parentActivityName=".har.HARActivity" />
@@ -50,5 +64,7 @@
             android:exported="false"
             tools:node="remove" />
     </application>
-
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.STORAGE"/>
 </manifest>

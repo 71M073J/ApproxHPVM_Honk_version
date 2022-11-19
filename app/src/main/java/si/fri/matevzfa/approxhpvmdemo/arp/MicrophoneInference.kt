@@ -1,4 +1,4 @@
-package si.fri.matevzfa.approxhpvmdemo.trace
+package si.fri.matevzfa.approxhpvmdemo.arp
 
 import android.annotation.SuppressLint
 import android.app.NotificationChannel
@@ -14,6 +14,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import si.fri.matevzfa.approxhpvmdemo.R
+import si.fri.matevzfa.approxhpvmdemo.activityName
 import si.fri.matevzfa.approxhpvmdemo.adaptation.*
 import si.fri.matevzfa.approxhpvmdemo.data.*
 import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
@@ -22,25 +23,30 @@ import si.fri.matevzfa.approxhpvmdemo.har.Configuration
 import java.time.Instant
 
 @HiltWorker
-class TraceClassificationWork @AssistedInject constructor(
+class MicrophoneInference @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    val classificationDao: ClassificationDao,
-    val traceClassificationDao: TraceClassificationDao,
+    //val classificationDao: ClassificationDao,
+    //val traceClassificationDao: TraceClassificationDao,
+    val signalImageDao: SignalImageDao,
     val approxHPVMWrapper: ApproxHPVMWrapper,
 ) : CoroutineWorker(context, workerParams) {
 
-    private val forRunStart = workerParams.inputData.getString("RUN_START")
-
     override suspend fun doWork(): Result {
-        val classifications = classificationDao.loadAllByRunStart(forRunStart)
-
-        showNotification("Trace classification started", "You will be notified when it completes.")
+        val signalImage = signalImageDao.getLast().split(",").map { it.toFloat() }.toFloatArray()
+        val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
+        //showNotification("Trace classification started", "You will be notified when it completes.")
 
         val traceRunStart = dateTimeFormatter.format(Instant.now())
 
         val noEngine = NoAdaptation(approxHPVMWrapper)
-        val engines = listOf(
+
+        Log.w(TAG, "WE GUCCI")
+        Log.w(TAG, signalImage.toString())
+        val (softm, argm) = noEngine.useFor{classify(signalImage)}
+        Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
+        Log.e(TAG, softm.joinToString(","))
+        /*val engines = listOf(
             NaiveAdaptation(approxHPVMWrapper, 1),
             NaiveAdaptation(approxHPVMWrapper, 2),
             StateAdaptation(approxHPVMWrapper, 1),
@@ -57,9 +63,9 @@ class TraceClassificationWork @AssistedInject constructor(
                 Configuration.loadConfigurations(applicationContext),
                 2,
             )*/
-        )
+        )*/
 
-
+        /*
         for ((i, c: Classification) in classifications.withIndex()) {
             c.signalImage ?: continue
 
@@ -106,7 +112,7 @@ class TraceClassificationWork @AssistedInject constructor(
         showNotification(
             "Trace classification completed",
             "Classification for $forRunStart completed."
-        )
+        )*/
 
         return Result.success()
     }
