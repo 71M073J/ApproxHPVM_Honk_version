@@ -1,5 +1,6 @@
 package si.fri.matevzfa.approxhpvmdemo.data
 
+import android.os.Trace
 import androidx.paging.DataSource
 import androidx.room.Dao
 import androidx.room.Delete
@@ -19,6 +20,9 @@ interface TraceClassificationDao {
 
     @Query("DELETE FROM trace_classification WHERE trace_run_start = :traceRunStart")
     fun deleteAllByTraceRunStart(traceRunStart: String)
+
+    @Query("SELECT * FROM trace_classification ORDER BY uid DESC LIMIT 1")
+    fun getLast(): TraceClassification?
 
     @Query("SELECT DISTINCT run_start FROM trace_classification ORDER BY timestamp ASC")
     fun getRunStarts(): List<String>

@@ -78,10 +78,26 @@ class DataImportWork @AssistedInject constructor(
         var signalImage : FloatArray
         val runStart = Clock.System.now()
         val numImages = (vals2.size / (101 * 40)).toInt()
-        for (i in 0 until 100){
+        for (i in 0 until 1){
             signalImage = FloatArray(101 * 40)
-            for (j in 0 until (101 * 40)){
-                signalImage[j] = vals2[i * (40 * 101) + j]//TODO REDO the reverse indexing for image
+            for (j in 0 until (101 * 40)){//TODO REDO the reverse indexing for image
+                //signalImage[4039 - ((j % 40) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((j % 101) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((39 - (j % 40)) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((100 - (j % 101)) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((j % 40) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((j % 101) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((39 - (j % 40)) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
+                //signalImage[4039 - ((100 - (j % 101)) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
+                //signalImage[((j % 40) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
+                //signalImage[((j % 101) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
+                //signalImage[((39 - (j % 40)) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
+                //signalImage[((100 - (j % 101)) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
+                //signalImage[((j % 40) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
+                //signalImage[((j % 101) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
+                //signalImage[((39 - (j % 40)) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
+                signalImage[((100 - (j % 101)) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
+                //TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
             }
             val classification = Classification(
                 uid = 0,

@@ -27,7 +27,7 @@ class MicrophoneInference @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     //val classificationDao: ClassificationDao,
-    //val traceClassificationDao: TraceClassificationDao,
+    val traceClassificationDao: TraceClassificationDao,
     val signalImageDao: SignalImageDao,
     val approxHPVMWrapper: ApproxHPVMWrapper,
 ) : CoroutineWorker(context, workerParams) {
@@ -46,6 +46,23 @@ class MicrophoneInference @AssistedInject constructor(
         val (softm, argm) = noEngine.useFor{classify(signalImage)}
         Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
         Log.e(TAG, softm.joinToString(","))
+        //TODO make a new DB for this, so i can also clear it on work start, so there is always just
+        //one entry, unless we want history
+        val tc = TraceClassification(
+            uid = 0,
+            timestamp = "now",
+            runStart = "before",
+            traceRunStart = traceRunStart,
+            usedConfig = 0,
+            argMax = argm,
+            confidenceConcat = softm.joinToString(","),
+            argMaxBaseline = 0,
+            confidenceBaselineConcat = "",
+            usedEngine = "no engine",
+            info = "no info",
+        )
+
+        traceClassificationDao.insertAll(tc)
         /*val engines = listOf(
             NaiveAdaptation(approxHPVMWrapper, 1),
             NaiveAdaptation(approxHPVMWrapper, 2),
@@ -148,9 +165,9 @@ class MicrophoneInference @AssistedInject constructor(
     }
 
     companion object {
-        const val TAG = "TraceClassificationWork"
-        const val CHANNEL_ID = "TraceClassificationWork"
-        const val COMPLETED_ID = 5050123
+        const val TAG = "microphoneInference"
+        const val CHANNEL_ID = "microphoneInference"
+        const val COMPLETED_ID = 5050124
 
         const val RUN_START = "RUN_START"
     }
