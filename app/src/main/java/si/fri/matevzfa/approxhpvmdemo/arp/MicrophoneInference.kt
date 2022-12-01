@@ -43,15 +43,16 @@ class MicrophoneInference @AssistedInject constructor(
 
         Log.w(TAG, "WE GUCCI")
         Log.w(TAG, signalImage.toString())
-        val (softm, argm) = noEngine.useFor{classify(signalImage)}
+        //noEngine.useFor{}
+        val (softm, argm) = classify(signalImage)
         Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
         Log.e(TAG, softm.joinToString(","))
         //TODO make a new DB for this, so i can also clear it on work start, so there is always just
         //one entry, unless we want history
         val tc = TraceClassification(
             uid = 0,
-            timestamp = "now",
-            runStart = "before",
+            timestamp = null,
+            runStart = null,
             traceRunStart = traceRunStart,
             usedConfig = 0,
             argMax = argm,
