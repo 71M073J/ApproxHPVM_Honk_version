@@ -35,7 +35,7 @@ class MicrophoneInference @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val signalImage = signalImageDao.getLast().split(",").map { it.toFloat() }.toFloatArray()
         val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
-        //showNotification("Trace classification started", "You will be notified when it completes.")
+        showNotification("Trace classification started", "You will be notified when it completes.")
 
         val traceRunStart = dateTimeFormatter.format(Instant.now())
 
@@ -48,7 +48,7 @@ class MicrophoneInference @AssistedInject constructor(
         Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
         Log.e(TAG, softm.joinToString(","))
         //TODO make a new DB for this, so i can also clear it on work start, so there is always just
-        //one entry, unless we want history
+        // one entry, unless we want history
         val tc = TraceClassification(
             uid = 0,
             timestamp = null,
