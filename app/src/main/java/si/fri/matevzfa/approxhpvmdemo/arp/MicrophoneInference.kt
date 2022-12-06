@@ -35,8 +35,8 @@ class MicrophoneInference @AssistedInject constructor(
     override suspend fun doWork(): Result {
         val signalImage = signalImageDao.getLast().split(",").map { it.toFloat() }.toFloatArray()
         val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
-        showNotification("Trace classification started", "You will be notified when it completes.")
-
+        //showNotification("Trace classification started", "You will be notified when it completes.")
+        //Nočemo tega tukaj, če že dej to v onclicklistener za gumb (ta funkcija se kliče vsako sekundo)
         val traceRunStart = dateTimeFormatter.format(Instant.now())
 
         val noEngine = NoAdaptation(approxHPVMWrapper)

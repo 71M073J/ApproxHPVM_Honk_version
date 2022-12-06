@@ -81,6 +81,18 @@ class DataImportWork @AssistedInject constructor(
         for (i in 0 until 10000 step 100){
             signalImage = FloatArray(101 * 40)
             for (j in 0 until (101 * 40)){//TODO REDO the reverse indexing for image
+
+                //for (i in multipliedData.indices){//i gre do 100
+                //    for (j in multipliedData[i].indices){//j gre do 39
+                        //Log.d("TAGAAAAAAAAAAAAAA", "$i-----------$j")
+                        //signalImage[(39 - i) * 40 + (100 - j)] = multipliedData[i][j]
+                        //signalImage[(39 - i) * 40 + (j)] = multipliedData[i][j]
+                        //signalImage[(i) * 40 + (100 - j)] = multipliedData[i][j]
+                        //signalImage[((i) * 40 + (j))] = multipliedData[i][j]
+                        //signalImage[(39 - j) * 40 + (100 - i)] = multipliedData[i][j]
+                        //signalImage[(39 - j) * 40 + (i)] = multipliedData[i][j]
+                        //signalImage[(j) * 40 + (100 - i)] = multipliedData[i][j]
+                signalImage[j] = vals2[i * (40 * 101) + j]
                 //signalImage[4039 - ((j % 40) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
                 //signalImage[4039 - ((j % 101) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
                 //signalImage[4039 - ((39 - (j % 40)) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
@@ -98,7 +110,7 @@ class DataImportWork @AssistedInject constructor(
                 //tested 28.11 down
                 //signalImage[((39 - (j % 40)) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
                 //signalImage[((100 - (j % 101)) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
-                signalImage[(((j % 40)) * 101 + ((j / 40)))] = vals2[i * (40 * 101) + j]
+                //signalImage[(((j % 40)) * 101 + ((j / 40)))] = vals2[i * (40 * 101) + j]
                 //signalImage[(((j % 101)) * 40 + ((j / 101)))] = vals2[i * (40 * 101) + j]
                 //
                 //TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

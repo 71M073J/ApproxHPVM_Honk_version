@@ -2,25 +2,36 @@ package si.fri.matevzfa.approxhpvmdemo.arp
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.media.*
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.opengl.Visibility
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
+import android.os.SystemClock.sleep
 import android.util.Log
 import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import com.github.psambit9791.jdsp.filter.Butterworth
+import androidx.work.WorkManager
 import com.jlibrosa.audio.JLibrosa
 import dagger.hilt.android.AndroidEntryPoint
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
-import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import si.fri.matevzfa.approxhpvmdemo.adaptation.NoAdaptation
+import si.fri.matevzfa.approxhpvmdemo.data.*
 import si.fri.matevzfa.approxhpvmdemo.databinding.ActivityArpactivityBinding
+import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import java.io.IOException
 import java.util.*
 import javax.inject.Inject
@@ -28,6 +39,12 @@ import kotlin.math.absoluteValue
 import kotlin.math.ln
 import kotlin.math.pow
 import kotlin.math.sqrt
+import android.media.*
+import com.github.psambit9791.jdsp.filter.Butterworth
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
+import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
+
 
 
 @AndroidEntryPoint
@@ -36,7 +53,7 @@ class ARPActivity : AppCompatActivity() {
     private val RECORDER_SAMPLERATE = 16000
     private val RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO
     private val RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_FLOAT
-
+    private var restart_rec = false
     var BufferElements = 16000
     private var recorder: AudioRecord? = null
     private var recordingThread: Thread? = null
@@ -128,7 +145,7 @@ class ARPActivity : AppCompatActivity() {
         //setContentView(R.layout.activity_arpactivity)
 
         Log.e(TAG,"wtf2")
-        /*WorkManager.getInstance(baseContext)
+        WorkManager.getInstance(baseContext)
             .getWorkInfosForUniqueWorkLiveData(UNIQUE_WORK_NAME)
             .observe(this) { workInfos ->
                 for (info in workInfos) {
@@ -138,12 +155,13 @@ class ARPActivity : AppCompatActivity() {
                         a = 0
                     }
                 }
-            }*/
+            }
     }
 
     override fun onPause() {
         super.onPause()
         kill_recorder()
+        restart_rec = true
     }
     fun kill_recorder(){
         isRecording = false;
@@ -168,7 +186,6 @@ class ARPActivity : AppCompatActivity() {
             Log.e(TAG, "error initializing");
             return;
         }
-
         recorder?.startRecording()
         isRecording = true
 
@@ -181,8 +198,9 @@ class ARPActivity : AppCompatActivity() {
     }
     override fun onResume() {
         super.onResume()
-        if (isRecording){
+        if (restart_rec or isRecording){
             init_recorder()
+            restart_rec = false
         }
     }
 
@@ -196,7 +214,7 @@ class ARPActivity : AppCompatActivity() {
         val order = 4
         // Apparently this is the cutoff frequency to use for speech recognition
         val lowCutOffFreq = 300.0
-
+        //TODO a lahko popravš tako da je pravilno importan? men tega Butterworth ne recognisa
         val butterworthFilter = Butterworth(RECORDER_SAMPLERATE.toDouble())
         val result: DoubleArray = butterworthFilter.lowPassFilter(doubleArray, order, lowCutOffFreq)
         var rmse = 0.0
@@ -220,11 +238,17 @@ class ARPActivity : AppCompatActivity() {
         val fData = FloatArray(BufferElements)
         var jLibrosa: JLibrosa = JLibrosa();
         while (isRecording) {
+            recorder!!.read(fData, 0, BufferElements, AudioRecord.READ_BLOCKING)
+            //also ne vem a bi tle to delal
+            /*TODO FIX
+
             Thread.sleep(1_500)
             recorder!!.read(fData, 0, BufferElements, AudioRecord.READ_NON_BLOCKING)
             peakThread = Thread({ calculateRmse(fData) }, "Peak finder Thread")
             peakThread!!.start()
+            */
             try {
+
                 signalImageDao.deleteAll()
                 var melSpectrogram: Array<FloatArray> =
                     jLibrosa.generateMelSpectroGram(fData, 16000, 512, 40, 160)
@@ -314,8 +338,8 @@ class ARPActivity : AppCompatActivity() {
                     .setInputData(dataa)
                     .build()
 
-                //WorkManager.getInstance(baseContext)
-                //    .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
+                WorkManager.getInstance(baseContext) //DONT comment this, this is the call that makes inference
+                    .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
 
                 //break
 
