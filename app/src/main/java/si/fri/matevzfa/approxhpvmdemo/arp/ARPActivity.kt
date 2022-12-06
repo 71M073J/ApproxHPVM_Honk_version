@@ -252,17 +252,17 @@ class ARPActivity : AppCompatActivity() {
                         //signalImage[(39 - j) * 40 + (100 - i)] = multipliedData[i][j]
                         //signalImage[(39 - j) * 40 + (i)] = multipliedData[i][j]
                         //signalImage[(j) * 40 + (100 - i)] = multipliedData[i][j]
-                        //signalImage[(i) * 40 + (j)] = multipliedData[i][j]
+                        signalImage[(i) * 40 + (j)] = multipliedData[i][j]
                         //signalImage[(100 - i) * 40 + (39 - j)] = multipliedData[i][j]
                     }
                 }
                 //sleep(2000L)
 
-                for (i in test_data.indices){//i gre do 0 do 100
-                    for (j in test_data[i].indices){//j gre 0 do 39
-                        signalImage[(100 - i) * 40 + (39 - j)] = test_data[i][j]
-                    }
-                }
+                //for (i in test_data.indices){//i gre do 0 do 100
+                //    for (j in test_data[i].indices){//j gre 0 do 39
+                //        signalImage[(i) * 40 + (j)] = test_data[i][j]
+                //    }
+                //}
 
                 //for (i in multipliedData){
                 //    Log.e(TAG, i.joinToString(","))

@@ -106,6 +106,7 @@ class Filter {
     )
 
 
+
     public val filter = arrayOf(
         floatArrayOf(
             0.15811388300841897F,
