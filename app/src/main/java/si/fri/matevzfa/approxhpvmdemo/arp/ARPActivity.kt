@@ -2,40 +2,33 @@ package si.fri.matevzfa.approxhpvmdemo.arp
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.media.AudioFormat
-import android.media.AudioRecord
-import android.media.MediaRecorder
-import android.opengl.Visibility
+import android.media.*
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.os.SystemClock.sleep
 import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.work.Data
-import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkManager
+import com.github.psambit9791.jdsp.filter.Butterworth
 import com.jlibrosa.audio.JLibrosa
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import si.fri.matevzfa.approxhpvmdemo.adaptation.NoAdaptation
-import si.fri.matevzfa.approxhpvmdemo.data.*
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
+import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
 import si.fri.matevzfa.approxhpvmdemo.databinding.ActivityArpactivityBinding
-import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import java.io.IOException
 import java.util.*
 import javax.inject.Inject
+import kotlin.math.absoluteValue
 import kotlin.math.ln
+import kotlin.math.pow
+import kotlin.math.sqrt
+
 
 @AndroidEntryPoint
 class ARPActivity : AppCompatActivity() {
@@ -47,6 +40,7 @@ class ARPActivity : AppCompatActivity() {
     var BufferElements = 16000
     private var recorder: AudioRecord? = null
     private var recordingThread: Thread? = null
+    private var peakThread: Thread? = null
     private var isRecording = false
     //private lateinit var stopListening :Button
     private var filter = Filter().filter;
@@ -55,6 +49,10 @@ class ARPActivity : AppCompatActivity() {
     val UPDATE_RATE_MS = 1000L
     @Inject
     lateinit var traceClassificationDao :TraceClassificationDao
+
+    private var speechCounter = 0
+    private var rmseSum : Double = 0.0
+    private var numberOfReadings = 10 // Number of readings before calculating mean
 
     private val updateTimeHandler = object : Handler(Looper.getMainLooper()){
         override fun handleMessage(message: Message) {
@@ -130,7 +128,7 @@ class ARPActivity : AppCompatActivity() {
         //setContentView(R.layout.activity_arpactivity)
 
         Log.e(TAG,"wtf2")
-        WorkManager.getInstance(baseContext)
+        /*WorkManager.getInstance(baseContext)
             .getWorkInfosForUniqueWorkLiveData(UNIQUE_WORK_NAME)
             .observe(this) { workInfos ->
                 for (info in workInfos) {
@@ -140,7 +138,7 @@ class ARPActivity : AppCompatActivity() {
                         a = 0
                     }
                 }
-            }
+            }*/
     }
 
     override fun onPause() {
@@ -165,6 +163,12 @@ class ARPActivity : AppCompatActivity() {
             RECORDER_SAMPLERATE, RECORDER_CHANNELS,
             RECORDER_AUDIO_ENCODING, BufferElements
         )
+
+        if (recorder!!.state != AudioRecord.STATE_INITIALIZED) { // check for proper initialization
+            Log.e(TAG, "error initializing");
+            return;
+        }
+
         recorder?.startRecording()
         isRecording = true
 
@@ -182,18 +186,48 @@ class ARPActivity : AppCompatActivity() {
         }
     }
 
+    // Calculate rmse and select approximation level if needed
+    private fun calculateRmse(fData: FloatArray) {
+        val doubleArray = DoubleArray(fData.count())
+        for (i in 0 until fData.count()) {
+            doubleArray[i] = fData[i].toDouble()
+        }
+
+        val order = 4
+        // Apparently this is the cutoff frequency to use for speech recognition
+        val lowCutOffFreq = 300.0
+
+        val butterworthFilter = Butterworth(RECORDER_SAMPLERATE.toDouble())
+        val result: DoubleArray = butterworthFilter.lowPassFilter(doubleArray, order, lowCutOffFreq)
+        var rmse = 0.0
+        
+        doubleArray.forEachIndexed{ i, value ->
+            rmse += (value - result[i]).pow(2)
+        }
+        
+        rmseSum += sqrt(rmse)
+        speechCounter++
+        Log.d("RMSE", "$rmse , $rmseSum, $speechCounter")
+
+        if (speechCounter == numberOfReadings) {
+            var rmseMean = rmseSum / speechCounter
+            // TODO Select mean value for approximation levels
+            //  test which means work for which approximation level
+        }
+    }
+
     private fun writeAudioDataToFile() {
         val fData = FloatArray(BufferElements)
         var jLibrosa: JLibrosa = JLibrosa();
         while (isRecording) {
-            recorder!!.read(fData, 0, BufferElements, AudioRecord.READ_BLOCKING)
-            //System.out.println("Short writing to file $fData")
+            Thread.sleep(1_500)
+            recorder!!.read(fData, 0, BufferElements, AudioRecord.READ_NON_BLOCKING)
+            peakThread = Thread({ calculateRmse(fData) }, "Peak finder Thread")
+            peakThread!!.start()
             try {
                 signalImageDao.deleteAll()
                 var melSpectrogram: Array<FloatArray> =
                     jLibrosa.generateMelSpectroGram(fData, 16000, 512, 40, 160)
-
-                //var melString = getString(melSpectrogram)
 
                 melSpectrogram.forEachIndexed { i, row ->
                     row.forEachIndexed { j, el ->
@@ -273,15 +307,15 @@ class ARPActivity : AppCompatActivity() {
                 )
                 signalImageDao.insertAll(si)
                 val dataa = Data.Builder()
-                    .putString("asda", "reeeeeeee")
+                    .putString("asd,a", "reeeee,eee")
                     .build()
 
                 val work = OneTimeWorkRequestBuilder<MicrophoneInference>()
                     .setInputData(dataa)
                     .build()
 
-                WorkManager.getInstance(baseContext)
-                    .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
+                //WorkManager.getInstance(baseContext)
+                //    .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
 
                 //break
 

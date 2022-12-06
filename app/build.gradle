@@ -66,12 +66,21 @@ android {
         jvmTarget = '1.8'
     }
     ndkVersion '21.4.7075529'
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/LICENSE.md'
+        exclude 'META-INF/LICENSE-notice.md'
+    }
 }
 
 dependencies {
     implementation("com.google.dagger:hilt-android:2.38.1")
     kapt("com.google.dagger:hilt-android-compiler:2.38.1")
-
+    implementation('com.github.psambit9791:jdsp:2.0.0') {
+        exclude group: 'org.apache.maven.surefire', module: 'common-java5'
+        exclude group: 'org.apache.maven.surefire', module: 'surefire-api'
+    }
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:1.5.21"
     implementation 'androidx.core:core-ktx:1.6.0'
