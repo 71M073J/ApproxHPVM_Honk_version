@@ -38,7 +38,6 @@ class MicrophoneInference @AssistedInject constructor(
         //showNotification("Trace classification started", "You will be notified when it completes.")
         //Nočemo tega tukaj, če že dej to v onclicklistener za gumb (ta funkcija se kliče vsako sekundo)
         val traceRunStart = dateTimeFormatter.format(Instant.now())
-
         val noEngine = NoAdaptation(approxHPVMWrapper)
 
         Log.w(TAG, "WE GUCCI")
@@ -160,6 +159,7 @@ class MicrophoneInference @AssistedInject constructor(
 
     private fun classify(signalImage: FloatArray): Pair<FloatArray, Int> {
         val softMax = FloatArray(12)
+        Log.e(TAG, "Am i here")
         approxHPVMWrapper.hpvmInference(signalImage, softMax)
         val argMax = softMax.indices.maxByOrNull { softMax[it] } ?: -1
         return Pair(softMax, argMax)
