@@ -240,12 +240,8 @@ class ARPActivity : AppCompatActivity() {
 
         var jLibrosa: JLibrosa = JLibrosa();
         while (isRecording) {
-            if (isFirstRead)
-                recorder!!.read(fDataFirst, 0, BufferElements, AudioRecord.READ_BLOCKING)
-            else {
-                System.arraycopy(fDataSecond, 0, fDataFirst, 0, BufferElements)
-                recorder!!.read(fDataSecond, 0, BufferElements, AudioRecord.READ_BLOCKING)
-            }
+            System.arraycopy(fDataSecond, 0, fDataFirst, 0, BufferElements)
+            recorder!!.read(fDataSecond, 0, BufferElements, AudioRecord.READ_BLOCKING)
 
             peakThread = Thread({ calculateDb() }, "Decibel calculation Thread")
             peakThread!!.start()
