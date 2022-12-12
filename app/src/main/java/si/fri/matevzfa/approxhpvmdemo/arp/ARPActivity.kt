@@ -57,7 +57,7 @@ class ARPActivity : AppCompatActivity() {
     private var speechCounter = 0
     private var numberOfReadings = 20 // Number of readings before calculating mean
     private var ampSum = 0.0
-    private var isFirstRead = true
+    private var approxLevel = 0
 
     private val updateTimeHandler = object : Handler(Looper.getMainLooper()){
         override fun handleMessage(message: Message) {
@@ -148,10 +148,6 @@ class ARPActivity : AppCompatActivity() {
             recorder = null;
             recordingThread = null;
         }
-        if (mRecorder != null) {
-            mRecorder.stop();
-            mRecorder.release();
-        }
         restart_rec = true
     }
 
@@ -220,7 +216,7 @@ class ARPActivity : AppCompatActivity() {
 
                 // TODO test which means work for which approximation level
                 //  - actually use approxLevel
-                var approxLevel = 0 // This means no approximation. 3 means max approximation
+                approxLevel = 0 // This means no approximation. 3 means max approximation
                 if (ampMean < 40) { approxLevel = 3 }
                 else if (ampMean < 50) { approxLevel = 2 }
                 else if (ampMean < 60) { approxLevel = 1 }
@@ -280,7 +276,7 @@ class ARPActivity : AppCompatActivity() {
 
                 val si = SignalImage(
                     uid = 0,
-                    img = signalImage.joinToString(",")
+                    img = signalImage.joinToString(",") + "-$approxLevel"
                 )
                 signalImageDao.insertAll(si)
                 val dataa = Data.Builder()
@@ -290,6 +286,8 @@ class ARPActivity : AppCompatActivity() {
                 val work = OneTimeWorkRequestBuilder<MicrophoneInference>()
                     .setInputData(dataa)
                     .build()
+
+                Log.e(TAG, "Queuening to work manager")
 
                 WorkManager.getInstance(baseContext)
                     .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
