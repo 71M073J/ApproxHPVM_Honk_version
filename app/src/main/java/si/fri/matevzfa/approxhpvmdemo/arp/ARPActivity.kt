@@ -20,12 +20,11 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.jlibrosa.audio.JLibrosa
 import dagger.hilt.android.AndroidEntryPoint
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
 import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
-import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
+import si.fri.matevzfa.approxhpvmdemo.data.ArpTraceClassificationDao
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
 import si.fri.matevzfa.approxhpvmdemo.databinding.ActivityArpactivityBinding
 import java.io.IOException
-import java.nio.Buffer
 import java.util.*
 import javax.inject.Inject
 import kotlin.math.ln
@@ -52,7 +51,7 @@ class ARPActivity : AppCompatActivity() {
     val MSG_UPDATE_TIME = 1
     val UPDATE_RATE_MS = 1000L
     @Inject
-    lateinit var traceClassificationDao :TraceClassificationDao
+    lateinit var traceClassificationDao : ArpTraceClassificationDao
 
     private var speechCounter = 0
     private var numberOfReadings = 20 // Number of readings before calculating mean
@@ -276,7 +275,7 @@ class ARPActivity : AppCompatActivity() {
 
                 val si = SignalImage(
                     uid = 0,
-                    img = signalImage.joinToString(",") + "-$approxLevel"
+                    img = signalImage.joinToString(",") + "#approx$approxLevel"
                 )
                 signalImageDao.insertAll(si)
                 val dataa = Data.Builder()

@@ -17,14 +17,17 @@ import java.time.Instant
 class MicrophoneInference @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    //val classificationDao: ClassificationDao,
-    val traceClassificationDao: TraceClassificationDao,
+    //val classificationDao: ArpClassificationDao,
+    val traceClassificationDao: ArpTraceClassificationDao,
     val signalImageDao: SignalImageDao,
     val approxHPVMWrapper: ApproxHPVMWrapper,
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val signalImageSplit = signalImageDao.getLast().split("-")
+        val signalImageSplit = signalImageDao.getLast().split("#approx")
+        Log.e(TAG, signalImageDao.getLast())
+        Log.e(TAG, signalImageSplit[0])
+        Log.e(TAG, signalImageSplit[1])
         val signalImage = signalImageSplit[0].split(",").map { it.toFloat() }.toFloatArray()
         val approxLevel = signalImageSplit[1].toInt()
         val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
@@ -32,24 +35,27 @@ class MicrophoneInference @AssistedInject constructor(
 
         // This is where we set the approximation levels
         val arpEngine = ArpAdaptation(approxHPVMWrapper, approxLevel)
-
+        val noEngine = NoAdaptation(approxHPVMWrapper)
+        //val confidenceEngine = HARConfidenceAdaptation(approxHPVMWrapper)
         Log.w(TAG, "WE GUCCI")
         Log.w(TAG, signalImage.toString())
         Log.i(TAG, "Using approximation level: ${arpEngine.currentApproxLevel}")
+
+        // Approximated classification
         val (softm, argm) = arpEngine.useFor { classify(signalImage) }
+        // Non-approximated classification for evaluation
+        val (softmBaseline, argmBaseline) = noEngine.useFor { classify(signalImage) }
 
         Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
         Log.e(TAG, softm.joinToString(","))
 
         arpEngine.actUpon(softm, argm)
-        //TODO make a new DB for this, so i can also clear it on work start, so there is always just
-        // one entry, unless we want history
-        val tc = TraceClassification(
+        val tc = ArpTraceClassification(
             uid = 0,
             timestamp = null,
             runStart = null,
             traceRunStart = traceRunStart,
-            usedConfig = 0,
+            usedConfig = approxHPVMWrapper.hpvmAdaptiveGetConfigIndex(),
             argMax = argm,
             confidenceConcat = softm.joinToString(","),
             argMaxBaseline = 0,
@@ -65,7 +71,7 @@ class MicrophoneInference @AssistedInject constructor(
 
     private fun classify(signalImage: FloatArray) : Pair<FloatArray, Int> {
         val softMax = FloatArray(12)
-        Log.e(TAG, "Am i here")
+        Log.e(TAG, "Classify in microphone inference")
         approxHPVMWrapper.hpvmInference(signalImage, softMax)
         val argMax = softMax.indices.maxByOrNull { softMax[it] } ?: -1
         return Pair(softMax, argMax)
