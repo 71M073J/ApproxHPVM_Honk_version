@@ -298,17 +298,14 @@ class ARPActivity : AppCompatActivity() {
 
 
                 var signalImage = FloatArray(101 * 40)
-                var cnt = 0
-                val test_data = Filter().test_value
+                //var cnt = 0
+                //val test_data = Filter().test_value
                 for (i in multipliedData.indices){//i gre do 100
                     for (j in multipliedData[i].indices){//j gre do 39
-                        signalImage[(i) * 40 + (j)] = test_data[i][j] // multipliedData[i][j]
+                        signalImage[(i) * 40 + (j)] = multipliedData[i][j]
                         //Log.e("asfasdfadsf", test_data[i][j].toString() + ":" + i.toString() + ":" + j.toString())
                     }
                 }
-                isRecording = false
-                //sleep(2000L)
-                Log.w("TAGASDFASDF", signalImage.joinToString(","))
                 //for (i in test_data.indices){//i gre do 0 do 100
                 //    for (j in test_data[i].indices){//j gre 0 do 39
                 //        signalImage[(i) * 40 + (j)] = test_data[i][j]
