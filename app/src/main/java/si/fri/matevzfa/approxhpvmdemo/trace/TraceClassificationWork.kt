@@ -67,27 +67,6 @@ class TraceClassificationWork @AssistedInject constructor(
 
             val (softMaxBaseline, argMaxBaseline) = noEngine.useFor { classify(signalImage) }
 
-            //INSERTED FOR DEBUGGING
-
-            val tc = TraceClassification(
-                uid = 0,
-                timestamp = c.timestamp,
-                runStart = c.runStart,
-                traceRunStart = traceRunStart,
-                usedConfig = 0,
-                argMax = argMaxBaseline,
-                confidenceConcat = softMaxBaseline.joinToString(","),
-                argMaxBaseline = argMaxBaseline,
-                confidenceBaselineConcat = softMaxBaseline.joinToString(","),
-                usedEngine = "noEngine.name()",
-                info = c.info,
-            )
-
-            traceClassificationDao.insertAll(tc)
-            continue
-            //INSERTED FOR DEBUGGING
-
-
             for (engine in engines) {
                 Log.i(
                     TAG,

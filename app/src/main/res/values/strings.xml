@@ -8,7 +8,7 @@
     <string name="traces_info">Choose which trace to run adaptable AMC on.</string>
     <string name="buttonSelectFile">Import</string>
     <string name="import_a_csv_file_of_raw_data">
-        Tapping the button below will load a csv from application\'s assets into internal database.
+        Tapping the button below will load a binary file from application\'s assets into internal database.
     </string>
     <string name="main_button_mobiprox">Mobiprox Activities</string>
     <string name="main_button_arp">ARP Activities</string>

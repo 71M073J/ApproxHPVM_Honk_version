@@ -302,29 +302,19 @@ class ARPActivity : AppCompatActivity() {
                 val test_data = Filter().test_value
                 for (i in multipliedData.indices){//i gre do 100
                     for (j in multipliedData[i].indices){//j gre do 39
-                        //Log.d("TAGAAAAAAAAAAAAAA", "$i-----------$j")
-                        //signalImage[(39 - i) * 40 + (100 - j)] = multipliedData[i][j]
-                        //signalImage[(39 - i) * 40 + (j)] = multipliedData[i][j]
-                        //signalImage[(i) * 40 + (100 - j)] = multipliedData[i][j]
-                        //signalImage[((i) * 40 + (j))] = multipliedData[i][j]
-                        //signalImage[(39 - j) * 40 + (100 - i)] = multipliedData[i][j]
-                        //signalImage[(39 - j) * 40 + (i)] = multipliedData[i][j]
-                        //signalImage[(j) * 40 + (100 - i)] = multipliedData[i][j]
-                        signalImage[(i) * 40 + (j)] = multipliedData[i][j]
-                        //signalImage[(100 - i) * 40 + (39 - j)] = multipliedData[i][j]
+                        signalImage[(i) * 40 + (j)] = test_data[i][j] // multipliedData[i][j]
+                        //Log.e("asfasdfadsf", test_data[i][j].toString() + ":" + i.toString() + ":" + j.toString())
                     }
                 }
+                isRecording = false
                 //sleep(2000L)
-
+                Log.w("TAGASDFASDF", signalImage.joinToString(","))
                 //for (i in test_data.indices){//i gre do 0 do 100
                 //    for (j in test_data[i].indices){//j gre 0 do 39
                 //        signalImage[(i) * 40 + (j)] = test_data[i][j]
                 //    }
                 //}
 
-                //for (i in multipliedData){
-                //    Log.e(TAG, i.joinToString(","))
-                //}
                 val si = SignalImage(
                     uid = 0,
                     img = signalImage.joinToString(",")

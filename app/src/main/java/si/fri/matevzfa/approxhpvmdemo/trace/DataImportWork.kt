@@ -31,17 +31,17 @@ class DataImportWork @AssistedInject constructor(
     private val signalProcessor = HARSignalProcessor(HARSignalProcessor.AxisOrder.DEFAULT)
     private val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val binfilePath = "tune_input.bin"
+        val binfilePath = "tune_input.bin" //file name in the app's assets directory
+        // numpy array of shape (n_inputs, 1, 101, 40), saved with
+        // arr.astype("<f4").tofile(fd)
         val result = kotlin.runCatching {
-            applicationContext.assets.open(binfilePath)//.bufferedReader().lines()
-            //.collect(Collectors.toList())!!
+            applicationContext.assets.open(binfilePath)
         }
 
         if (result.isFailure) {
             Log.e(TAG, "An error occurred", result.exceptionOrNull())
             return@withContext Result.failure()
         }
-        //val file = applicationContext.assets.open(binfilePath)
         val file = result.getOrNull()!!
         var bytes : ByteArray = file.readBytes()
 
@@ -49,72 +49,42 @@ class DataImportWork @AssistedInject constructor(
         for(i in bytes.indices){
             vals[i/4] = vals[i/4] or ((bytes[i].toInt() and 0x000000FF) shl ((i % 4)) * 8)
         }
-        bytes = ByteArray(0)
-        val binfilePathLabels = "tune_labels.bin"
+        bytes = ByteArray(0)//manual memory management
+
+        val binfilePathLabels = "tune_labels.bin"//file name in the app's assets directory
+        // numpy array of shape (n_inputs), saved with
+        // arr.astype("int32").tofile(fd)
         val resultLabels = kotlin.runCatching {
-            applicationContext.assets.open(binfilePathLabels)//.bufferedReader().lines()
-            //.collect(Collectors.toList())!!
+            applicationContext.assets.open(binfilePathLabels)
         }
         if (resultLabels.isFailure) {
             Log.e(TAG, "An error occurred", result.exceptionOrNull())
             return@withContext Result.failure()
         }
-        //val file = applicationContext.assets.open(binfilePath)
         val fileLabels = resultLabels.getOrNull()!!
         var bytesLabels : ByteArray = fileLabels.readBytes()
         var valsLabels = IntArray(bytesLabels.size / 4)
         for(i in bytesLabels.indices){
             valsLabels[i/4] = valsLabels[i/4] or ((bytesLabels[i].toInt() and 0x000000FF) shl ((i % 4)) * 8)
         }
-        bytesLabels = ByteArray(0)
+        bytesLabels = ByteArray(0)//manual memory management
 
         var vals2 = FloatArray(vals.size)
         for(i in vals.indices){
             vals2[i] = java.lang.Float.intBitsToFloat(vals[i])
         }
-        vals = IntArray(0)
-        //VALS2 PRAVILNO PARSA AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        Log.i("asda", vals2[0].toString() + ", " + vals2[1].toString() +", "+ vals2[2].toString()  + ", "+ vals2.size)
+        vals = IntArray(0)//manual memory management
+
+        //Log.i("asda", vals2[0].toString() + ", " + vals2[1].toString() +", "+ vals2[2].toString()  + ", "+ vals2.size)
         var signalImage : FloatArray
         val runStart = Clock.System.now()
         val numImages = (vals2.size / (101 * 40)).toInt()
-        for (i in 0 until 10000 step 100){
+        for (i in 0 until numImages){
             signalImage = FloatArray(101 * 40)
-            for (j in 0 until (101 * 40)){//TODO REDO the reverse indexing for image
-
-                //for (i in multipliedData.indices){//i gre do 100
-                //    for (j in multipliedData[i].indices){//j gre do 39
-                        //Log.d("TAGAAAAAAAAAAAAAA", "$i-----------$j")
-                        //signalImage[(39 - i) * 40 + (100 - j)] = multipliedData[i][j]
-                        //signalImage[(39 - i) * 40 + (j)] = multipliedData[i][j]
-                        //signalImage[(i) * 40 + (100 - j)] = multipliedData[i][j]
-                        //signalImage[((i) * 40 + (j))] = multipliedData[i][j]
-                        //signalImage[(39 - j) * 40 + (100 - i)] = multipliedData[i][j]
-                        //signalImage[(39 - j) * 40 + (i)] = multipliedData[i][j]
-                        //signalImage[(j) * 40 + (100 - i)] = multipliedData[i][j]
+            for (j in 0 until (101 * 40)){
                 signalImage[j] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((j % 40) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((j % 101) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((39 - (j % 40)) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((100 - (j % 101)) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((j % 40) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((j % 101) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((39 - (j % 40)) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
-                //signalImage[4039 - ((100 - (j % 101)) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
-                //signalImage[((j % 40) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
-                //signalImage[((j % 101) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
-                //signalImage[((39 - (j % 40)) * 101 + (j / 40))] = vals2[i * (40 * 101) + j]
-                //signalImage[((100 - (j % 101)) * 40 + (j / 101))] = vals2[i * (40 * 101) + j]
-                //signalImage[((j % 40) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
-                //signalImage[((j % 101) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
-                //tested 28.11 down
-                //signalImage[((39 - (j % 40)) * 101 + (100 - (j / 40)))] = vals2[i * (40 * 101) + j]
-                //signalImage[((100 - (j % 101)) * 40 + (39 - (j / 101)))] = vals2[i * (40 * 101) + j]
-                //signalImage[(((j % 40)) * 101 + ((j / 40)))] = vals2[i * (40 * 101) + j]
-                //signalImage[(((j % 101)) * 40 + ((j / 101)))] = vals2[i * (40 * 101) + j]
-                //
-                //TODO AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
             }
+
             val classification = Classification(
                 uid = 0,
                 timestamp = Clock.System.now().toString(),
@@ -134,7 +104,8 @@ class DataImportWork @AssistedInject constructor(
             )
             classificationDao.insertAll(classification)
         }
-        vals2 = FloatArray(0)
+        vals2 = FloatArray(0)//manual memory management
+
 /*
         val filePath = "raw_labels.txt"
 
