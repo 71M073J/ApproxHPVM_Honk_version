@@ -24,12 +24,15 @@ class MicrophoneInference @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val signalImageSplit = signalImageDao.getLast().split("#approx")
-        Log.e(TAG, signalImageDao.getLast())
-        Log.e(TAG, signalImageSplit[0])
-        Log.e(TAG, signalImageSplit[1])
-        val signalImage = signalImageSplit[0].split(",").map { it.toFloat() }.toFloatArray()
-        val approxLevel = signalImageSplit[1].toInt()
+        val lastData = signalImageDao.getLast()
+        if (lastData.img == null || lastData.approxnum == null){
+            return Result.failure()
+        }
+        Log.e(TAG, lastData.toString())
+        //Log.e(TAG, signalImageSplit[0])
+        //Log.e(TAG, signalImageSplit[1])
+        val signalImage = lastData.img.split(",").map { it.toFloat() }.toFloatArray()
+        val approxLevel = lastData.approxnum
         val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
         val traceRunStart = dateTimeFormatter.format(Instant.now())
 

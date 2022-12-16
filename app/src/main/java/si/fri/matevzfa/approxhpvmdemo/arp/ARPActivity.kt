@@ -11,9 +11,12 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import android.view.View
+import android.widget.TableRow
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.get
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -63,14 +66,25 @@ class ARPActivity : AppCompatActivity() {
     private var numberOfReadings = 20 // Number of readings before calculating mean
     private var ampSum = 0.0
     private var approxLevel = 0
-
+    fun update_table(softmax_str: String){
+        val tableLayout = binding.tableSoftmax
+        val percents = softmax_str.split(",")
+        for (row in 0 until 4){
+            val t_row = tableLayout.getChildAt(row) as TableRow
+            for (column in 1 until 6 step 2){
+                val text_view = t_row.getChildAt(column) as TextView
+                text_view.text = percents[(column / 2) * 4 + row].split(".")[1].substring(0,2) + "%"
+            }
+        }
+    }
     private val updateTimeHandler = object : Handler(Looper.getMainLooper()){
         override fun handleMessage(message: Message) {
             if (MSG_UPDATE_TIME == message.what) {
                 //if we have a service, we update on loop
                 val data = traceClassificationDao.getLast()
                 if (data != null){
-                    binding.softmaxOutput.text = data.confidenceConcat
+                    update_table(data.confidenceConcat!!)
+                    //binding.softmaxOutput.text = data.confidenceConcat
                     if (data.argMax != null){
                         binding.selected.text = labelNames[data.argMax]
                     }
@@ -140,8 +154,8 @@ class ARPActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        restart_rec = isRecording
         kill_recorder()
-        restart_rec = true
     }
 
     fun kill_recorder(){
@@ -153,7 +167,7 @@ class ARPActivity : AppCompatActivity() {
             recorder = null;
             recordingThread = null;
         }
-        restart_rec = true
+        //restart_rec = true
     }
 
     fun init_recorder(){
@@ -279,7 +293,8 @@ class ARPActivity : AppCompatActivity() {
                 }
                 val si = SignalImage(
                     uid = 0,
-                    img = signalImage.joinToString(",") + "#approx$approxLevel"
+                    img = signalImage.joinToString(","),
+                    approxnum = approxLevel
                 )
                 signalImageDao.insertAll(si)
                 val dataa = Data.Builder()

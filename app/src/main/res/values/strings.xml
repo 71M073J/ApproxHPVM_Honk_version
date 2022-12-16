@@ -14,4 +14,16 @@
     <string name="main_button_arp">ARP Activities</string>
     <string name="button_helper">Decide which app to use</string>
     <string name="stop_listening_button">Stop Listening</string>
+    <string name="yes">Yes:</string>
+    <string name="left">Left:</string>
+    <string name="stop">Stop:</string>
+    <string name="no">No:</string>
+    <string name="right">Right:</string>
+    <string name="go">Go:</string>
+    <string name="silence">Silence:</string>
+    <string name="up">Up:</string>
+    <string name="on">On:</string>
+    <string name="unknown">Unknown:</string>
+    <string name="down">Down:</string>
+    <string name="off">Off:</string>
 </resources>

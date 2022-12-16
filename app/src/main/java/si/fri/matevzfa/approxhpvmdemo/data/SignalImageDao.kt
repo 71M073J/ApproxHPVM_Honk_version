@@ -17,8 +17,8 @@ interface SignalImageDao {
     @Query("DELETE FROM signal_image WHERE uid = :ID")
     fun deleteByID(ID: Int?)
 
-    @Query("SELECT img FROM signal_image ORDER BY uid DESC LIMIT 1")
-    fun getLast(): String
+    @Query("SELECT * FROM signal_image ORDER BY uid DESC LIMIT 1")
+    fun getLast(): SignalImage
 
     @Query("DELETE FROM signal_image")
     fun deleteAll()

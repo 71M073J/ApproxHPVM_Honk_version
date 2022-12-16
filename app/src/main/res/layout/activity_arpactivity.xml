@@ -18,7 +18,7 @@
         app:layout_constraintHorizontal_bias="0.495"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.21" />
+        app:layout_constraintVertical_bias="0.133" />
 
     <Button
         android:id="@+id/start_listening"
@@ -29,7 +29,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/textView"
-        app:layout_constraintVertical_bias="0.119" />
+        app:layout_constraintVertical_bias="0.037" />
 
     <Button
         android:id="@+id/stop_listening"
@@ -39,8 +39,10 @@
         android:text="@string/stop_listening_button"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/start_listening" />
+        app:layout_constraintTop_toBottomOf="@+id/start_listening"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/selected"
@@ -49,22 +51,10 @@
         android:text="TextView"
         app:layout_constraintBottom_toTopOf="@+id/sound_level"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/stop_listening"
-        app:layout_constraintVertical_bias="0.516" />
-
-    <TextView
-        android:id="@+id/softmax_output"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="54dp"
-        android:text="TextView"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/stop_listening"
-        app:layout_constraintVertical_bias="0.104" />
+        app:layout_constraintVertical_bias="0.105" />
 
     <TextView
         android:id="@+id/sound_level"
@@ -91,6 +81,160 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/stop_listening"
         app:layout_constraintVertical_bias="0.529" />
+
+    <TableLayout
+        android:id="@+id/table_softmax"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp" >
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="1"
+                android:text="@string/silence"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="3"
+                android:text="@string/up"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="5"
+                android:text="@string/on"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+        </TableRow>
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp" >
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="1"
+                android:text="@string/unknown"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="3"
+                android:text="@string/down"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="5"
+                android:text="@string/off"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+        </TableRow>
+        <TableRow
+            android:id="@+id/tableRow3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp" >
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="1"
+                android:text="@string/yes"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="3"
+                android:text="@string/left"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="5"
+                android:text="@string/stop"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+        </TableRow>
+        <TableRow
+            android:id="@+id/tableRow4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="5dp" >
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="1"
+                android:text="@string/no"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="3"
+                android:text="@string/right"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:layout_column="5"
+                android:text="@string/go"
+                android:padding="3dip" />
+            <TextView
+                android:layout_weight="1"
+                android:text=""
+                android:gravity="center"
+                android:padding="3dip" />
+        </TableRow>
+    </TableLayout>
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
