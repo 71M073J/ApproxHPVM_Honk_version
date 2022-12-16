@@ -43,6 +43,17 @@
         app:layout_constraintTop_toBottomOf="@+id/start_listening" />
 
     <TextView
+        android:id="@+id/selected"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        app:layout_constraintBottom_toTopOf="@+id/sound_level"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/stop_listening"
+        app:layout_constraintVertical_bias="0.516" />
+
+    <TextView
         android:id="@+id/softmax_output"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -56,15 +67,30 @@
         app:layout_constraintVertical_bias="0.104" />
 
     <TextView
-        android:id="@+id/selected"
+        android:id="@+id/sound_level"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="TextView"
-        app:layout_constraintBottom_toTopOf="@+id/softmax_output"
+        android:layout_marginTop="54dp"
+        android:text="Current sound level: 0dB"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.528"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/stop_listening"
-        app:layout_constraintVertical_bias="0.516" />
+        app:layout_constraintVertical_bias="0.351" />
+
+    <TextView
+        android:id="@+id/avg_sound_level"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="54dp"
+        android:text="Average sound level: 0dB"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.539"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/stop_listening"
+        app:layout_constraintVertical_bias="0.529" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

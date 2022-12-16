@@ -5,26 +5,24 @@ import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
-import android.opengl.Visibility
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
-import android.os.SystemClock.sleep
 import android.util.Log
 import android.view.View
-import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.FragmentActivity
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.jlibrosa.audio.JLibrosa
 import dagger.hilt.android.AndroidEntryPoint
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
+import si.fri.matevzfa.approxhpvmdemo.data.ArpTraceClassificationDao
+import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,16 +33,9 @@ import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import java.io.IOException
 import java.util.*
 import javax.inject.Inject
-import kotlin.math.absoluteValue
 import kotlin.math.ln
-import kotlin.math.pow
-import kotlin.math.sqrt
-import android.media.*
-import com.github.psambit9791.jdsp.filter.Butterworth
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
-import si.fri.matevzfa.approxhpvmdemo.data.TraceClassificationDao
-
+import kotlin.math.log10
+import kotlin.math.roundToInt
 
 
 @AndroidEntryPoint
@@ -54,8 +45,9 @@ class ARPActivity : AppCompatActivity() {
     private val RECORDER_CHANNELS = AudioFormat.CHANNEL_IN_MONO
     private val RECORDER_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_FLOAT
     private var restart_rec = false
-    var BufferElements = 16000
+    var BufferElements = 8000
     private var recorder: AudioRecord? = null
+    private var mRecorder: MediaRecorder = MediaRecorder()
     private var recordingThread: Thread? = null
     private var peakThread: Thread? = null
     private var isRecording = false
@@ -65,11 +57,12 @@ class ARPActivity : AppCompatActivity() {
     val MSG_UPDATE_TIME = 1
     val UPDATE_RATE_MS = 1000L
     @Inject
-    lateinit var traceClassificationDao :TraceClassificationDao
+    lateinit var traceClassificationDao : ArpTraceClassificationDao
 
     private var speechCounter = 0
-    private var rmseSum : Double = 0.0
-    private var numberOfReadings = 10 // Number of readings before calculating mean
+    private var numberOfReadings = 20 // Number of readings before calculating mean
+    private var ampSum = 0.0
+    private var approxLevel = 0
 
     private val updateTimeHandler = object : Handler(Looper.getMainLooper()){
         override fun handleMessage(message: Message) {
@@ -98,23 +91,19 @@ class ARPActivity : AppCompatActivity() {
 
         binding.stopListening.visibility = View.INVISIBLE
         setContentView(view)
-        Log.e(TAG,"wtf")
         binding.stopListening.setOnClickListener {
-            Log.e("WTF", "CLICK")
+            Log.e("Stop Button", "CLICK")
             kill_recorder()
             updateTimeHandler.removeMessages(MSG_UPDATE_TIME)
             binding.startListening.visibility = View.VISIBLE
             binding.stopListening.visibility = View.INVISIBLE
         }
         binding.startListening.setOnClickListener {
+            Log.e("Start Button", "CLICK")
             init_recorder()
             binding.startListening.visibility = View.INVISIBLE
             binding.stopListening.visibility = View.VISIBLE
         }
-
-
-        Log.e(TAG,"wtf")
-        //setContentView(R.layout.activity_arpactivity)
 
         if (ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED &&
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
@@ -127,13 +116,6 @@ class ARPActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, permissions, 0)
         }
 
-
-            //stopListening.setOnClickListener {
-            //    isRecording = false
-            //    recorder?.stop()
-            //    stopListening.visibility = View.INVISIBLE
-            //}
-
         if (ActivityCompat.checkSelfPermission(
                 applicationContext,
                 Manifest.permission.RECORD_AUDIO
@@ -141,10 +123,7 @@ class ARPActivity : AppCompatActivity() {
         ) {
             return
         }
-        Log.e(TAG,"wtf")
-        //setContentView(R.layout.activity_arpactivity)
 
-        Log.e(TAG,"wtf2")
         WorkManager.getInstance(baseContext)
             .getWorkInfosForUniqueWorkLiveData(UNIQUE_WORK_NAME)
             .observe(this) { workInfos ->
@@ -156,6 +135,7 @@ class ARPActivity : AppCompatActivity() {
                     }
                 }
             }
+
     }
 
     override fun onPause() {
@@ -163,25 +143,25 @@ class ARPActivity : AppCompatActivity() {
         kill_recorder()
         restart_rec = true
     }
+
     fun kill_recorder(){
         isRecording = false;
         if (null != recorder) {
             updateTimeHandler.removeMessages(MSG_UPDATE_TIME)
-            //if (alreadyStarted){
             recorder?.stop();
             recorder?.release();
-            //}
             recorder = null;
             recordingThread = null;
         }
+        restart_rec = true
     }
+
     fun init_recorder(){
         recorder = AudioRecord(
             MediaRecorder.AudioSource.MIC,
             RECORDER_SAMPLERATE, RECORDER_CHANNELS,
             RECORDER_AUDIO_ENCODING, BufferElements
         )
-
         if (recorder!!.state != AudioRecord.STATE_INITIALIZED) { // check for proper initialization
             Log.e(TAG, "error initializing");
             return;
@@ -189,10 +169,24 @@ class ARPActivity : AppCompatActivity() {
         recorder?.startRecording()
         isRecording = true
 
+        mRecorder = MediaRecorder()
+        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC)
+        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
+        mRecorder.setOutputFile("${externalCacheDir?.absolutePath}/temp.3gp")
+
+        try {
+            mRecorder.prepare()
+        } catch (e: IllegalStateException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        mRecorder.start();
+
         updateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME)
-        //
+
         recordingThread = Thread({
-            //stopListening.visibility = View.VISIBLE
             writeAudioDataToFile() }, "AudioRecorder Thread")
         recordingThread!!.start()
     }
@@ -204,52 +198,60 @@ class ARPActivity : AppCompatActivity() {
         }
     }
 
-    // Calculate rmse and select approximation level if needed
-    private fun calculateRmse(fData: FloatArray) {
-        val doubleArray = DoubleArray(fData.count())
-        for (i in 0 until fData.count()) {
-            doubleArray[i] = fData[i].toDouble()
-        }
-
-        val order = 4
-        // Apparently this is the cutoff frequency to use for speech recognition
-        val lowCutOffFreq = 300.0
-        //TODO a lahko popravš tako da je pravilno importan? men tega Butterworth ne recognisa
-        val butterworthFilter = Butterworth(RECORDER_SAMPLERATE.toDouble())
-        val result: DoubleArray = butterworthFilter.lowPassFilter(doubleArray, order, lowCutOffFreq)
-        var rmse = 0.0
-        
-        doubleArray.forEachIndexed{ i, value ->
-            rmse += (value - result[i]).pow(2)
-        }
-        
-        rmseSum += sqrt(rmse)
+    // Calculate Decibels and select approximation level if needed
+    private fun calculateDb() {
         speechCounter++
-        Log.d("RMSE", "$rmse , $rmseSum, $speechCounter")
+        try {
+            var currAmp = 20 * log10(mRecorder.maxAmplitude.toDouble())
+            if (currAmp == Double.NEGATIVE_INFINITY || currAmp == Double.POSITIVE_INFINITY)
+            { currAmp = 0.0 }
+            ampSum += currAmp
+            Log.d("Decibel level", "$speechCounter $ampSum $currAmp")
 
-        if (speechCounter == numberOfReadings) {
-            var rmseMean = rmseSum / speechCounter
-            // TODO Select mean value for approximation levels
-            //  test which means work for which approximation level
+            var ampMean = ampSum / speechCounter
+            runOnUiThread {
+                binding.soundLevel.text = "Current sound level: ${currAmp.roundToInt()}dB"
+                binding.avgSoundLevel.text = "Average sound level: ${ampMean.roundToInt()}dB"
+            }
+
+            if (speechCounter == numberOfReadings) {
+                Log.d("Decibel mean value", "$ampMean")
+                speechCounter = 0
+                ampSum = 0.0
+
+                // TODO test which means work for which approximation level
+                //  - actually use approxLevel
+                approxLevel = 0 // This means no approximation. 3 means max approximation
+                if (ampMean < 40) { approxLevel = 3 }
+                else if (ampMean < 50) { approxLevel = 2 }
+                else if (ampMean < 60) { approxLevel = 1 }
+            }
+        } catch (e : Exception) {
+            Log.e("Decibel calculation thread",
+                "Exception thrown: probably media recorder was stopped while this thread" +
+                        " was still running")
+            e.printStackTrace()
         }
+
     }
 
     private fun writeAudioDataToFile() {
-        val fData = FloatArray(BufferElements)
+        val fDataFirst = FloatArray(BufferElements)
+        var fDataSecond = FloatArray(BufferElements)
+
         var jLibrosa: JLibrosa = JLibrosa();
         while (isRecording) {
-            recorder!!.read(fData, 0, BufferElements, AudioRecord.READ_BLOCKING)
-            //also ne vem a bi tle to delal
-            /*TODO FIX
+            System.arraycopy(fDataSecond, 0, fDataFirst, 0, BufferElements)
+            recorder!!.read(fDataSecond, 0, BufferElements, AudioRecord.READ_BLOCKING)
 
-            Thread.sleep(1_500)
-            recorder!!.read(fData, 0, BufferElements, AudioRecord.READ_NON_BLOCKING)
-            peakThread = Thread({ calculateRmse(fData) }, "Peak finder Thread")
+            peakThread = Thread({ calculateDb() }, "Decibel calculation Thread")
             peakThread!!.start()
-            */
-            try {
 
+            try {
                 signalImageDao.deleteAll()
+                var fData = FloatArray(BufferElements * 2)
+                System.arraycopy(fDataFirst, 0, fData, 0, BufferElements)
+                System.arraycopy(fDataSecond, 0, fData, BufferElements, BufferElements)
                 var melSpectrogram: Array<FloatArray> =
                     jLibrosa.generateMelSpectroGram(fData, 16000, 512, 40, 160)
 
@@ -259,23 +261,6 @@ class ARPActivity : AppCompatActivity() {
                     }
                 }
 
-                //Log.e(TAG, melSpectrogram.size.toString() + " - " + melSpectrogram[0].size.toString())
-                //data = [np.matmul(self.dct_filters, np.atleast_2d(x).T) for x in a.T]
-                //why is this even necessary???
-                /*var data : Array<FloatArray> = emptyArray()
-                for (i in melSpectrogram[0].indices) {
-                    var l : FloatArray = floatArrayOf()
-                    //var j = 0
-                    for (j in melSpectrogram.indices) {
-                        var m = melSpectrogram[j][i]
-                        l = l.plus(melSpectrogram[j][i])
-                    }
-                    data = data.plus(l)
-                }*/
-                //101-krat 40 vektor, ta 40 vektor je 40 množenj
-                //for (i in melSpectrogram){
-                //    Log.e(TAG, i.joinToString(","))
-                //}
                 val multipliedData = Array(101){FloatArray(40)}
                 for (i in multipliedData.indices){
                     for (j in filter.indices){
@@ -285,36 +270,16 @@ class ARPActivity : AppCompatActivity() {
                     }
                 }
 
-
-                /*var multipliedData = Array(filter.count()) { FloatArray(data[0].count()) }
-                // Matrix multiplication with filter
-                for (i in filter.indices) {
-                    for (j in data[0].indices) {
-                        for (k in filter[0].indices) {
-                            multipliedData[i][j] += filter[i][k] * data[k][j]
-                        }
-                    }
-                }*/
-
-
                 var signalImage = FloatArray(101 * 40)
-                //var cnt = 0
                 //val test_data = Filter().test_value
                 for (i in multipliedData.indices){//i gre do 100
                     for (j in multipliedData[i].indices){//j gre do 39
                         signalImage[(i) * 40 + (j)] = multipliedData[i][j]
-                        //Log.e("asfasdfadsf", test_data[i][j].toString() + ":" + i.toString() + ":" + j.toString())
                     }
                 }
-                //for (i in test_data.indices){//i gre do 0 do 100
-                //    for (j in test_data[i].indices){//j gre 0 do 39
-                //        signalImage[(i) * 40 + (j)] = test_data[i][j]
-                //    }
-                //}
-
                 val si = SignalImage(
                     uid = 0,
-                    img = signalImage.joinToString(",")
+                    img = signalImage.joinToString(",") + "#approx$approxLevel"
                 )
                 signalImageDao.insertAll(si)
                 val dataa = Data.Builder()
@@ -325,17 +290,10 @@ class ARPActivity : AppCompatActivity() {
                     .setInputData(dataa)
                     .build()
 
-                WorkManager.getInstance(baseContext) //DONT comment this, this is the call that makes inference
+                Log.e(TAG, "Queuening to work manager")
+
+                WorkManager.getInstance(baseContext)
                     .enqueueUniqueWork(UNIQUE_WORK_NAME, ExistingWorkPolicy.KEEP, work)
-
-                //break
-
-                //isRecording = false
-                //val (softmax, argmax) = classify(signalImage)
-                //out_view.text = labelNames[argmax]
-                // data = [np.matmul(self.dct_filters, x) for x in np.split(data, data.shape[1], axis=1)]
-                //var mulString = getString(multipliedData)
-                //Log.d("TEST 1234214", Arrays.toString(fData))
             } catch (e: IOException) {
                 e.printStackTrace()
             }

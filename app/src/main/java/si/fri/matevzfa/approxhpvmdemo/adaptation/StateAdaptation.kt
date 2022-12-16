@@ -40,7 +40,6 @@ class StateAdaptation(approxHPVMWrapper: ApproxHPVMWrapper, val factor: Int = 1)
             min(0, approximationVotes) - 1
         }.coerceIn(-2, 2)
 
-
         Log.i(TAG, "approximationVotes $approximationVotes")
 
         if (approximationVotes <= -2) {

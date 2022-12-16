@@ -3,6 +3,7 @@ package si.fri.matevzfa.approxhpvmdemo.har
 import android.content.Context
 import android.content.res.AssetManager
 import android.util.Log
+import si.fri.matevzfa.approxhpvmdemo.arp.ARPActivity
 
 class ApproxHPVMWrapper(context: Context)  {
     companion object {
@@ -61,6 +62,7 @@ class ApproxHPVMWrapper(context: Context)  {
 
         // Run inference
         hpvmAdaptiveSetConfigIndex(configIdx)
+
         hpvmInference(input, output)
 
         // Restore index
