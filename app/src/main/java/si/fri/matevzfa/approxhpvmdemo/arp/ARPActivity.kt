@@ -75,6 +75,7 @@ class ARPActivity : AppCompatActivity() {
                 if (c > 0) { c-- }
                 if (c == 3) { c-- }
                 if (row + c * 4 == indexOfCommand){
+                    // TODO send this word to microphone inference to save in database
                     runOnUiThread {
                         binding.WordToSay.text = commandView.text
                     }
@@ -287,6 +288,8 @@ class ARPActivity : AppCompatActivity() {
                 speechCounter = 0
                 ampSum = 0.0
 
+                // TODO add actual lookup table for approximation levels
+                //  maybe as companion object or something
                 approxLevel = 0 // This means no approximation. 3 means max approximation
                 if (ampMean < 40) { approxLevel = 35 }
                 else if (ampMean < 50) { approxLevel = 15 }

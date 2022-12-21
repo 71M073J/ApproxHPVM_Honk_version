@@ -41,7 +41,8 @@ class MicrophoneInference @AssistedInject constructor(
         // This is where we set the approximation levels
         val arpEngine = ArpAdaptation(approxHPVMWrapper, approxLevel)
         val noEngine = NoAdaptation(approxHPVMWrapper)
-        // TODO add configurations parameter here
+        // TODO this probably doesn't work
+        //  make it work :D
         val confidenceEngine = HARConfidenceAdaptation(approxHPVMWrapper, loadConfigurations(applicationContext))
         Log.w(TAG, "WE GUCCI")
         Log.w(TAG, signalImage.toString())
