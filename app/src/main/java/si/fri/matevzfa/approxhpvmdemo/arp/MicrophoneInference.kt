@@ -11,7 +11,9 @@ import si.fri.matevzfa.approxhpvmdemo.adaptation.*
 import si.fri.matevzfa.approxhpvmdemo.data.*
 import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
 import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
+import si.fri.matevzfa.approxhpvmdemo.har.Configuration
 import java.time.Instant
+import kotlin.math.sign
 
 @HiltWorker
 class MicrophoneInference @AssistedInject constructor(
@@ -25,7 +27,7 @@ class MicrophoneInference @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val lastData = signalImageDao.getLast()
-        if (lastData.img == null || lastData.approxnum == null){
+        if (lastData == null || lastData.img == null || lastData.approxnum == null){
             return Result.failure()
         }
         Log.e(TAG, lastData.toString())
@@ -39,7 +41,8 @@ class MicrophoneInference @AssistedInject constructor(
         // This is where we set the approximation levels
         val arpEngine = ArpAdaptation(approxHPVMWrapper, approxLevel)
         val noEngine = NoAdaptation(approxHPVMWrapper)
-        //val confidenceEngine = HARConfidenceAdaptation(approxHPVMWrapper)
+        // TODO add configurations parameter here
+        val confidenceEngine = HARConfidenceAdaptation(approxHPVMWrapper, loadConfigurations(applicationContext))
         Log.w(TAG, "WE GUCCI")
         Log.w(TAG, signalImage.toString())
         Log.i(TAG, "Using approximation level: ${arpEngine.currentApproxLevel}")
@@ -49,6 +52,8 @@ class MicrophoneInference @AssistedInject constructor(
         // Non-approximated classification for evaluation
         val (softmBaseline, argmBaseline) = noEngine.useFor { classify(signalImage) }
 
+        val (softmConf, argmConf) = confidenceEngine.useFor { classify(signalImage) }
+        
         Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
         Log.e(TAG, softm.joinToString(","))
 
@@ -86,5 +91,32 @@ class MicrophoneInference @AssistedInject constructor(
         const val COMPLETED_ID = 5050124
 
         const val RUN_START = "RUN_START"
+
+        fun loadConfigurations(ctx: Context): List<Configuration> =
+            ctx.assets.open("models/honk/confs.txt").reader()
+                .readLines()
+                .filter { it.startsWith("conf") }
+                .map { it.split(" ") }
+                .map { s ->
+                    Log.i(TAG, "$s")
+                    var idx = 0
+                    val id = s[idx++].replace("conf", "").toInt()
+
+                    // speedup, energy, accuracy
+                    idx += 3
+
+                    Configuration(
+                        id = id,
+                        qosLoss = s[idx++].toFloat(),
+                        overallConfidence = Configuration.ConfidenceInfo(
+                            s[idx++].toFloat(),
+                            s[idx++].toFloat(),
+                            s[idx++].toFloat()
+                        ),
+                        perClassConfidence = (idx..(s.size - 3) step 3).map { i ->
+                            Configuration.ConfidenceInfo(s[i].toFloat(), s[i + 1].toFloat(), s[i + 2].toFloat())
+                        },
+                    )
+                }
     }
 }

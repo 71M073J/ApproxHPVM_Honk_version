@@ -2,6 +2,7 @@ package si.fri.matevzfa.approxhpvmdemo.arp
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
@@ -11,28 +12,19 @@ import android.os.Looper
 import android.os.Message
 import android.util.Log
 import android.view.View
-import android.widget.TableRow
-import android.widget.TextView
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.get
 import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.jlibrosa.audio.JLibrosa
 import dagger.hilt.android.AndroidEntryPoint
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImageDao
-import si.fri.matevzfa.approxhpvmdemo.data.ArpTraceClassificationDao
-import si.fri.matevzfa.approxhpvmdemo.data.SignalImage
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import si.fri.matevzfa.approxhpvmdemo.adaptation.NoAdaptation
+import si.fri.matevzfa.approxhpvmdemo.R
 import si.fri.matevzfa.approxhpvmdemo.data.*
 import si.fri.matevzfa.approxhpvmdemo.databinding.ActivityArpactivityBinding
-import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import java.io.IOException
 import java.util.*
 import javax.inject.Inject
@@ -58,32 +50,50 @@ class ARPActivity : AppCompatActivity() {
     private var filter = Filter().filter;
     private lateinit var binding: ActivityArpactivityBinding
     val MSG_UPDATE_TIME = 1
-    val UPDATE_RATE_MS = 1000L
+    val UPDATE_RATE_MS : Long = 1000
     @Inject
     lateinit var traceClassificationDao : ArpTraceClassificationDao
 
     private var speechCounter = 0
-    private var numberOfReadings = 20 // Number of readings before calculating mean
+    private var numberOfReadings = 5 // Number of readings before calculating mean
     private var ampSum = 0.0
     private var approxLevel = 0
-    fun update_table(softmax_str: String){
+    private var indexOfCommand = 0
+
+    private var selectedBatteryId = 0
+    private var selectedAccuracyId = 0
+
+    fun updateTable(softmax_str: String){
         val tableLayout = binding.tableSoftmax
         val percents = softmax_str.split(",")
         for (row in 0 until 4){
-            val t_row = tableLayout.getChildAt(row) as TableRow
+            val tRow = tableLayout.getChildAt(row) as TableRow
             for (column in 1 until 6 step 2){
-                val text_view = t_row.getChildAt(column) as TextView
-                text_view.text = percents[(column / 2) * 4 + row].split(".")[1].substring(0,2) + "%"
+                val commandView = tRow.getChildAt(column - 1) as TextView
+                commandView.setTypeface(null, Typeface.NORMAL)
+                var c = column - 1
+                if (c > 0) { c-- }
+                if (c == 3) { c-- }
+                if (row + c * 4 == indexOfCommand){
+                    runOnUiThread {
+                        binding.WordToSay.text = commandView.text
+                    }
+                    commandView.setTypeface(null, Typeface.BOLD)
+                }
+                val percentView = tRow.getChildAt(column) as TextView
+                val str = percents[(column / 2) * 4 + row].split(".")[1].substring(0,2) + "%"
+                percentView.text = str
             }
         }
     }
+
     private val updateTimeHandler = object : Handler(Looper.getMainLooper()){
         override fun handleMessage(message: Message) {
             if (MSG_UPDATE_TIME == message.what) {
                 //if we have a service, we update on loop
                 val data = traceClassificationDao.getLast()
                 if (data != null){
-                    update_table(data.confidenceConcat!!)
+                    updateTable(data.confidenceConcat!!)
                     //binding.softmaxOutput.text = data.confidenceConcat
                     if (data.argMax != null){
                         binding.selected.text = labelNames[data.argMax]
@@ -128,6 +138,50 @@ class ARPActivity : AppCompatActivity() {
                 android.Manifest.permission.READ_EXTERNAL_STORAGE
             )
             ActivityCompat.requestPermissions(this, permissions, 0)
+        }
+
+        val adapterBat =
+            ArrayAdapter.createFromResource(this, R.array.battery, android.R.layout.simple_spinner_item)
+        adapterBat.setDropDownViewResource(android.R.layout.simple_spinner_item)
+
+        val spinnerBattery = findViewById<Spinner>(R.id.battery_dropdown)
+        spinnerBattery.adapter = adapterBat
+
+        spinnerBattery.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View?,
+                position: Int,
+                id: Long
+            ) {
+                selectedBatteryId = position
+            }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {
+                selectedBatteryId = 0
+            }
+        }
+
+        val adapterAcc =
+            ArrayAdapter.createFromResource(this, R.array.accuracy, android.R.layout.simple_spinner_item)
+        adapterAcc.setDropDownViewResource(android.R.layout.simple_spinner_item)
+
+        val spinnerAcc = findViewById<Spinner>(R.id.AccuracyDropdown)
+        spinnerAcc.adapter = adapterAcc
+
+        spinnerAcc.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parentView: AdapterView<*>?,
+                selectedItemView: View?,
+                position: Int,
+                id: Long
+            ) {
+                selectedAccuracyId = position
+            }
+
+            override fun onNothingSelected(parentView: AdapterView<*>?) {
+                selectedAccuracyId = 0
+            }
         }
 
         if (ActivityCompat.checkSelfPermission(
@@ -233,12 +287,18 @@ class ARPActivity : AppCompatActivity() {
                 speechCounter = 0
                 ampSum = 0.0
 
-                // TODO test which means work for which approximation level
-                //  - actually use approxLevel
                 approxLevel = 0 // This means no approximation. 3 means max approximation
-                if (ampMean < 40) { approxLevel = 3 }
-                else if (ampMean < 50) { approxLevel = 2 }
-                else if (ampMean < 60) { approxLevel = 1 }
+                if (ampMean < 40) { approxLevel = 35 }
+                else if (ampMean < 50) { approxLevel = 15 }
+                else if (ampMean < 60) { approxLevel = 10 }
+
+                runOnUiThread {
+                    binding.approxLevelNoise.text =
+                        "Current approximation level from noise policy adaptation: $approxLevel"
+                }
+
+                indexOfCommand++
+                if (indexOfCommand >= 12) { indexOfCommand = 0; }
             }
         } catch (e : Exception) {
             Log.e("Decibel calculation thread",
