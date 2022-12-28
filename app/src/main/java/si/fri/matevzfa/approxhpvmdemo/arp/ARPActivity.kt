@@ -320,7 +320,7 @@ class ARPActivity : AppCompatActivity() {
 
         var jLibrosa: JLibrosa = JLibrosa();
         while (isRecording) {
-            isRecording = false
+            //isRecording = false
             System.arraycopy(fDataSecond, 0, fDataFirst, 0, BufferElements)
             recorder!!.read(fDataSecond, 0, BufferElements, AudioRecord.READ_BLOCKING)
 
