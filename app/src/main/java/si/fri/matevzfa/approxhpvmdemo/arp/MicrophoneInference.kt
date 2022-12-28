@@ -31,8 +31,6 @@ class MicrophoneInference @AssistedInject constructor(
             return Result.failure()
         }
         Log.e(TAG, lastData.toString())
-        //Log.e(TAG, signalImageSplit[0])
-        //Log.e(TAG, signalImageSplit[1])
         val signalImage = lastData.img.split(",").map { it.toFloat() }.toFloatArray()
         val approxLevel = lastData.approxnum
         val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
@@ -58,24 +56,38 @@ class MicrophoneInference @AssistedInject constructor(
         Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
         Log.e(TAG, softm.joinToString(","))
 
+        // Recalculate configuration indexes
         arpEngine.actUpon(softm, argm)
+        confidenceEngine.actUpon(softmConf, argmConf)
+        noEngine.actUpon(softmBaseline, argmBaseline)
+
+        // Insert results into database
+        addToTraceClassification(traceRunStart, argm, softm, arpEngine, lastData)
+        addToTraceClassification(traceRunStart, argmBaseline, softmBaseline, noEngine, lastData)
+        addToTraceClassification(traceRunStart, argmConf, softmConf, confidenceEngine, lastData)
+
+        return Result.success()
+    }
+
+    private fun addToTraceClassification(traceRunStart : String?, argm : Int?,
+                                         softm: FloatArray, adaptEngine : AdaptationEngine,
+                                         signalImage: SignalImage) {
         val tc = ArpTraceClassification(
             uid = 0,
             timestamp = null,
             runStart = null,
             traceRunStart = traceRunStart,
-            usedConfig = approxHPVMWrapper.hpvmAdaptiveGetConfigIndex(),
+            usedConfig = adaptEngine.configuration(),
             argMax = argm,
             confidenceConcat = softm.joinToString(","),
             argMaxBaseline = 0,
             confidenceBaselineConcat = "",
-            usedEngine = arpEngine.name(),
+            usedEngine = adaptEngine.name(),
+            word_to_say = signalImage.wordToSay,
             info = "no info",
         )
 
         traceClassificationDao.insertAll(tc)
-
-        return Result.success()
     }
 
     private fun classify(signalImage: FloatArray) : Pair<FloatArray, Int> {
@@ -104,7 +116,7 @@ class MicrophoneInference @AssistedInject constructor(
                     val id = s[idx++].replace("conf", "").toInt()
 
                     // speedup, energy, accuracy
-                    idx += 3
+                    //idx += 3
 
                     Configuration(
                         id = id,

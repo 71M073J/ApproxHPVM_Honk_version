@@ -63,6 +63,8 @@ class ARPActivity : AppCompatActivity() {
     private var selectedBatteryId = 0
     private var selectedAccuracyId = 0
 
+    private var wordToSay = ""
+
     fun updateTable(softmax_str: String){
         val tableLayout = binding.tableSoftmax
         val percents = softmax_str.split(",")
@@ -75,10 +77,10 @@ class ARPActivity : AppCompatActivity() {
                 if (c > 0) { c-- }
                 if (c == 3) { c-- }
                 if (row + c * 4 == indexOfCommand){
-                    // TODO send this word to microphone inference to save in database
                     runOnUiThread {
                         binding.WordToSay.text = commandView.text
                     }
+                    wordToSay = commandView.text.toString()
                     commandView.setTypeface(null, Typeface.BOLD)
                 }
                 val percentView = tRow.getChildAt(column) as TextView
@@ -318,6 +320,7 @@ class ARPActivity : AppCompatActivity() {
 
         var jLibrosa: JLibrosa = JLibrosa();
         while (isRecording) {
+            isRecording = false
             System.arraycopy(fDataSecond, 0, fDataFirst, 0, BufferElements)
             recorder!!.read(fDataSecond, 0, BufferElements, AudioRecord.READ_BLOCKING)
 
@@ -357,7 +360,8 @@ class ARPActivity : AppCompatActivity() {
                 val si = SignalImage(
                     uid = 0,
                     img = signalImage.joinToString(","),
-                    approxnum = approxLevel
+                    approxnum = approxLevel,
+                    wordToSay = wordToSay
                 )
                 signalImageDao.insertAll(si)
                 val dataa = Data.Builder()

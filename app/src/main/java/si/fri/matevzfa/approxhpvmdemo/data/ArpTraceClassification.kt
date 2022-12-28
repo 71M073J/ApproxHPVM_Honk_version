@@ -17,6 +17,7 @@ data class ArpTraceClassification(
     @ColumnInfo(name = "confidence_baseline_concat") val confidenceBaselineConcat: String?,
     @ColumnInfo(name = "used_engine") val usedEngine: String?,
     @ColumnInfo(name = "info") val info: String = "",
+    @ColumnInfo(name = "word_to_say") val word_to_say : String = ""
 ) {
     override fun toString(): String =
         "TraceClassification($timestamp, $usedEngine, config=$usedConfig, base=$argMaxBaseline, approx=$argMax, info=$info)"
