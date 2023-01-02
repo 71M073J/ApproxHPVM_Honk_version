@@ -13,7 +13,6 @@ import si.fri.matevzfa.approxhpvmdemo.dateTimeFormatter
 import si.fri.matevzfa.approxhpvmdemo.har.ApproxHPVMWrapper
 import si.fri.matevzfa.approxhpvmdemo.har.Configuration
 import java.time.Instant
-import kotlin.math.sign
 
 @HiltWorker
 class MicrophoneInference @AssistedInject constructor(
@@ -27,7 +26,7 @@ class MicrophoneInference @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val lastData = signalImageDao.getLast()
-        if (lastData == null || lastData.img == null || lastData.approxnum == null){
+        if (lastData.img == null || lastData.approxnum == null){
             return Result.failure()
         }
         Log.e(TAG, lastData.toString())

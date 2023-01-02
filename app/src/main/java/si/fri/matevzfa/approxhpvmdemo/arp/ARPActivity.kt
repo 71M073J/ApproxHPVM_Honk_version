@@ -26,7 +26,6 @@ import si.fri.matevzfa.approxhpvmdemo.R
 import si.fri.matevzfa.approxhpvmdemo.data.*
 import si.fri.matevzfa.approxhpvmdemo.databinding.ActivityArpactivityBinding
 import java.io.IOException
-import java.util.*
 import javax.inject.Inject
 import kotlin.math.ln
 import kotlin.math.log10
@@ -46,8 +45,7 @@ class ARPActivity : AppCompatActivity() {
     private var recordingThread: Thread? = null
     private var peakThread: Thread? = null
     private var isRecording = false
-    //private lateinit var stopListening :Button
-    private var filter = Filter().filter;
+    private var filter = Filter().filter
     private lateinit var binding: ActivityArpactivityBinding
     val MSG_UPDATE_TIME = 1
     val UPDATE_RATE_MS : Long = 1000
@@ -96,6 +94,12 @@ class ARPActivity : AppCompatActivity() {
                 //if we have a service, we update on loop
                 val data = traceClassificationDao.getLast()
                 if (data != null){
+                    if (data.usedEngine!!.contains("HARConfidenceAdaptation")) {
+                        runOnUiThread {
+                            binding.approxLevelConfidence.text =
+                                "Current approximation level from confidence adaptation: ${data.usedConfig!!}"
+                        }
+                    }
                     updateTable(data.confidenceConcat!!)
                     //binding.softmaxOutput.text = data.confidenceConcat
                     if (data.argMax != null){
@@ -136,9 +140,9 @@ class ARPActivity : AppCompatActivity() {
             ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
         ) {
             val permissions = arrayOf(
-                android.Manifest.permission.RECORD_AUDIO,
-                android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                android.Manifest.permission.READ_EXTERNAL_STORAGE
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_EXTERNAL_STORAGE
             )
             ActivityCompat.requestPermissions(this, permissions, 0)
         }
@@ -216,13 +220,13 @@ class ARPActivity : AppCompatActivity() {
     }
 
     fun kill_recorder(){
-        isRecording = false;
+        isRecording = false
         if (null != recorder) {
             updateTimeHandler.removeMessages(MSG_UPDATE_TIME)
-            recorder?.stop();
-            recorder?.release();
-            recorder = null;
-            recordingThread = null;
+            recorder?.stop()
+            recorder?.release()
+            recorder = null
+            recordingThread = null
         }
         //restart_rec = true
     }
@@ -234,8 +238,8 @@ class ARPActivity : AppCompatActivity() {
             RECORDER_AUDIO_ENCODING, BufferElements
         )
         if (recorder!!.state != AudioRecord.STATE_INITIALIZED) { // check for proper initialization
-            Log.e(TAG, "error initializing");
-            return;
+            Log.e(TAG, "error initializing")
+            return
         }
         recorder?.startRecording()
         isRecording = true
@@ -253,7 +257,7 @@ class ARPActivity : AppCompatActivity() {
         } catch (e: IOException) {
             e.printStackTrace()
         }
-        mRecorder.start();
+        mRecorder.start()
 
         updateTimeHandler.sendEmptyMessage(MSG_UPDATE_TIME)
 
@@ -279,7 +283,7 @@ class ARPActivity : AppCompatActivity() {
             ampSum += currAmp
             Log.d("Decibel level", "$speechCounter $ampSum $currAmp")
 
-            var ampMean = ampSum / speechCounter
+            val ampMean = ampSum / speechCounter
             runOnUiThread {
                 binding.soundLevel.text = "Current sound level: ${currAmp.roundToInt()}dB"
                 binding.avgSoundLevel.text = "Average sound level: ${ampMean.roundToInt()}dB"
@@ -316,9 +320,9 @@ class ARPActivity : AppCompatActivity() {
 
     private fun writeAudioDataToFile() {
         val fDataFirst = FloatArray(BufferElements)
-        var fDataSecond = FloatArray(BufferElements)
+        val fDataSecond = FloatArray(BufferElements)
 
-        var jLibrosa: JLibrosa = JLibrosa();
+        val jLibrosa = JLibrosa()
         while (isRecording) {
             //isRecording = false
             System.arraycopy(fDataSecond, 0, fDataFirst, 0, BufferElements)
@@ -329,10 +333,10 @@ class ARPActivity : AppCompatActivity() {
 
             try {
                 signalImageDao.deleteAll()
-                var fData = FloatArray(BufferElements * 2)
+                val fData = FloatArray(BufferElements * 2)
                 System.arraycopy(fDataFirst, 0, fData, 0, BufferElements)
                 System.arraycopy(fDataSecond, 0, fData, BufferElements, BufferElements)
-                var melSpectrogram: Array<FloatArray> =
+                val melSpectrogram: Array<FloatArray> =
                     jLibrosa.generateMelSpectroGram(fData, 16000, 512, 40, 160)
 
                 melSpectrogram.forEachIndexed { i, row ->
@@ -350,7 +354,7 @@ class ARPActivity : AppCompatActivity() {
                     }
                 }
 
-                var signalImage = FloatArray(101 * 40)
+                val signalImage = FloatArray(101 * 40)
                 //val test_data = Filter().test_value
                 for (i in multipliedData.indices){//i gre do 100
                     for (j in multipliedData[i].indices){//j gre do 39
@@ -380,14 +384,6 @@ class ARPActivity : AppCompatActivity() {
                 e.printStackTrace()
             }
         }
-    }
-    private fun getString(arr : Array<FloatArray>) : String {
-        var str = "["
-        arr.forEach { r ->
-            str += Arrays.toString(r)
-        }
-        str += "]"
-        return str
     }
 
     companion object{
