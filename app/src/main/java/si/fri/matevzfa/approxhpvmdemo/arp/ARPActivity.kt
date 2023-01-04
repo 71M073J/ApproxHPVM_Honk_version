@@ -27,6 +27,7 @@ import si.fri.matevzfa.approxhpvmdemo.data.*
 import si.fri.matevzfa.approxhpvmdemo.databinding.ActivityArpactivityBinding
 import java.io.IOException
 import javax.inject.Inject
+import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.log10
 import kotlin.math.roundToInt
@@ -336,6 +337,17 @@ class ARPActivity : AppCompatActivity() {
                 val fData = FloatArray(BufferElements * 2)
                 System.arraycopy(fDataFirst, 0, fData, 0, BufferElements)
                 System.arraycopy(fDataSecond, 0, fData, BufferElements, BufferElements)
+
+                var maxVal : Float = 0f
+
+                fData.forEach { f ->
+                    if (abs(f) > maxVal) { maxVal = abs(f) }
+                }
+
+                fData.forEachIndexed { i, f ->
+                    fData[i] = f / maxVal
+                }
+
                 val melSpectrogram: Array<FloatArray> =
                     jLibrosa.generateMelSpectroGram(fData, 16000, 512, 40, 160)
 
