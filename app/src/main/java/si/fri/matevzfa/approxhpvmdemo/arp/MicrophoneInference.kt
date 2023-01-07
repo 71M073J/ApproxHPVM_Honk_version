@@ -26,54 +26,45 @@ class MicrophoneInference @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         val lastData = signalImageDao.getLast()
-        if (lastData.img == null || lastData.approxnum == null){
+        if (lastData.img == null){
             return Result.failure()
         }
         Log.e(TAG, lastData.toString())
         val signalImage = lastData.img.split(",").map { it.toFloat() }.toFloatArray()
-        val approxLevel = lastData.approxnum
         val labelNames =  "silence,unknown,yes,no,up,down,left,right,on,off,stop,go".split(",")
-        val traceRunStart = dateTimeFormatter.format(Instant.now())
 
         // This is where we set the approximation levels
-        val arpEngine = ArpAdaptation(approxHPVMWrapper, approxLevel)
         val noEngine = NoAdaptation(approxHPVMWrapper)
-        // TODO this probably doesn't work
-        //  make it work :D
         val confidenceEngine = HARConfidenceAdaptation(approxHPVMWrapper, loadConfigurations(applicationContext))
         Log.w(TAG, "WE GUCCI")
         Log.w(TAG, signalImage.toString())
-        Log.i(TAG, "Using approximation level: ${arpEngine.currentApproxLevel}")
 
-        // Approximated classification
-        val (softm, argm) = arpEngine.useFor { classify(signalImage) }
-        // Non-approximated classification for evaluation
-        val (softmBaseline, argmBaseline) = noEngine.useFor { classify(signalImage) }
-
-        val (softmConf, argmConf) = confidenceEngine.useFor { classify(signalImage) }
-        
-        Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
-        Log.e(TAG, softm.joinToString(","))
-
-        // Recalculate configuration indexes
-        arpEngine.actUpon(softm, argm)
-        confidenceEngine.actUpon(softmConf, argmConf)
-        noEngine.actUpon(softmBaseline, argmBaseline)
-
-        // Insert results into database
-        addToTraceClassification(traceRunStart, argm, softm, arpEngine, lastData)
-        addToTraceClassification(traceRunStart, argmBaseline, softmBaseline, noEngine, lastData)
-        addToTraceClassification(traceRunStart, argmConf, softmConf, confidenceEngine, lastData)
+        doInference(noEngine, signalImage, labelNames, lastData)
+        doInference(confidenceEngine, signalImage, labelNames, lastData)
 
         return Result.success()
     }
 
+    private fun doInference (engine : AdaptationEngine , micInput: FloatArray,
+                             labelNames: List<String>, lastData: SignalImage) {
+        val traceRunStart = dateTimeFormatter.format(Instant.now())
+        val (softm, argm) = engine.useFor { classify(micInput) }
+
+        Log.e(TAG, argm.toString() + "(${labelNames[argm]})")
+        Log.e(TAG, softm.joinToString(","))
+
+        engine.actUpon(softm, argm)
+        val timestamp = dateTimeFormatter.format(Instant.now())
+
+        addToTraceClassification(traceRunStart, argm, softm, engine, lastData, timestamp)
+    }
+
     private fun addToTraceClassification(traceRunStart : String?, argm : Int?,
                                          softm: FloatArray, adaptEngine : AdaptationEngine,
-                                         signalImage: SignalImage) {
+                                         signalImage: SignalImage, timestamp: String) {
         val tc = ArpTraceClassification(
             uid = 0,
-            timestamp = null,
+            timestamp = timestamp,
             runStart = null,
             traceRunStart = traceRunStart,
             usedConfig = adaptEngine.configuration(),
@@ -105,7 +96,7 @@ class MicrophoneInference @AssistedInject constructor(
         const val RUN_START = "RUN_START"
 
         fun loadConfigurations(ctx: Context): List<Configuration> =
-            ctx.assets.open("models/honk/confs.txt").reader()
+            ctx.assets.open("models/honk/conf_honk_best.txt").reader()
                 .readLines()
                 .filter { it.startsWith("conf") }
                 .map { it.split(" ") }

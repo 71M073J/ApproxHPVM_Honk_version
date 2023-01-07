@@ -5,7 +5,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 
 @Database(
-    version = 8,
+    version = 10,
     entities = [Classification::class, TraceClassification::class,
         ArpTraceClassification::class, SignalImage::class],
 )

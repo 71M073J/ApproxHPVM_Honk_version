@@ -8,9 +8,8 @@ import androidx.room.PrimaryKey
 data class SignalImage(
     @PrimaryKey(autoGenerate = true) val uid: Int,
     @ColumnInfo(name = "img") val img: String?,
-    @ColumnInfo(name = "approxnum") val approxnum: Int?,
     @ColumnInfo(name = "wordToSay") val wordToSay: String = ""
 ) {
     override fun toString(): String =
-        "SignalImage(ID:$uid, Image: $img, Approximation level: $approxnum)"
+        "SignalImage(ID:$uid, Image: $img)"
 }

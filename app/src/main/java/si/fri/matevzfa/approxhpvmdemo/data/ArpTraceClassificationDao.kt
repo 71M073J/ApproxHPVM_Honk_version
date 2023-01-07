@@ -23,6 +23,9 @@ interface ArpTraceClassificationDao {
     @Query("SELECT * FROM arp_trace_classification ORDER BY uid DESC LIMIT 1")
     fun getLast(): ArpTraceClassification?
 
+    @Query("SELECT * FROM arp_trace_classification ORDER BY uid DESC LIMIT 10")
+    fun getLastTen(): List<ArpTraceClassification>?
+
     @Query("SELECT DISTINCT run_start FROM arp_trace_classification ORDER BY timestamp ASC")
     fun getRunStarts(): List<String>
 
