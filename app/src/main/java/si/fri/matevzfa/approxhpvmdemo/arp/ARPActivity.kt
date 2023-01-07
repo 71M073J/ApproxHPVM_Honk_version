@@ -259,7 +259,7 @@ class ARPActivity : AppCompatActivity() {
                 binding.avgSoundLevel.text = "Average sound level: ${ampMean.roundToInt()}dB"
             }
 
-            if (speechCounter == numberOfReadings * 2) {
+            if (speechCounter == numberOfReadings) {
                 Log.d("Decibel mean value", "$ampMean")
                 speechCounter = 0
                 ampSum = 0.0
